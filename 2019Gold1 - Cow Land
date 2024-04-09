@@ -1,0 +1,124 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+vector<int> sz(1e5 + 1), p(1e5 + 1), dep(1e5 + 1), id(1e5 + 1), tp(1e5 + 1);
+vector<int> tree(1 << 18, 0);
+vector<vector<int>> edges(1e5 + 1);
+
+void szdfs(int node, int par)
+{
+	sz[node] = 1, p[node] = par;
+	for (int i = 0; i < edges[node].size(); i++) if (edges[node][i] != par)
+	{
+		dep[edges[node][i]] = dep[node] + 1;
+		szdfs(edges[node][i], node);
+		sz[node] += sz[edges[node][i]];
+	}
+}
+
+int cnt = 0;
+
+void hldfs(int node, int par, int top)
+{
+	id[node] = cnt++, tp[node] = top;
+	if (edges[node].size() < 2) return;
+
+	int next = -1, siz = -1;
+	for (int i = 0; i < edges[node].size(); i++) if ((edges[node][i] != par) && (sz[edges[node][i]] > siz))
+	{
+		siz = sz[edges[node][i]], next = edges[node][i];
+	}
+
+	hldfs(next, node, top);
+	for (int i = 0; i < edges[node].size(); i++) if ((edges[node][i] != par) && (edges[node][i] != next))
+		hldfs(edges[node][i], node, edges[node][i]);
+}
+
+void treeupd(int ind, int val)
+{
+	ind += (1 << 17);
+	tree[ind] = val;
+	while (ind > 1)
+	{
+		ind /= 2;
+		tree[ind] = tree[2 * ind] ^ tree[2 * ind + 1];
+	}
+}
+
+int treequery(int l, int r)
+{
+	l += (1 << 17), r += (1 << 17);
+	int ans = 0;
+	while (l <= r)
+	{
+		if (l % 2 == 1) ans ^= tree[l++];
+		if (r % 2 == 0) ans ^= tree[r--];
+		l /= 2, r /= 2;
+	}
+
+	return ans;
+}
+
+int pathquery(int a, int b)
+{
+	int ans = 0;
+	while (tp[a] != tp[b])
+	{
+		if (dep[tp[a]] > dep[tp[b]]) swap(a, b);
+		ans ^= treequery(id[tp[b]], id[b]);
+		b = p[tp[b]];
+	}
+
+	if (dep[a] > dep[b]) swap(a, b);
+	ans ^= treequery(id[a], id[b]);
+	return ans;
+}
+
+int main()
+{
+	ifstream fin("cowland.in");
+	ofstream fout("cowland.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, q;
+	fin >> n >> q;
+
+	vector<int> enj(n + 1);
+	for (int i = 1; i <= n; i++) fin >> enj[i];
+	for (int i = 1; i < n; i++)
+	{
+		int a, b;
+		fin >> a >> b;
+		edges[a].push_back(b), edges[b].push_back(a);
+	}
+
+	szdfs(1, 1);
+	hldfs(1, 1, 1);
+	for (int i = 1; i <= n; i++) treeupd(id[i], enj[i]);
+	
+	while (q--)
+	{
+		int Q;
+		fin >> Q;
+
+		if (Q == 1)
+		{
+			int ind, e;
+			fin >> ind >> e;
+			treeupd(id[ind], e);
+		}
+
+		else
+		{
+			int a, b;
+			fin >> a >> b;
+			fout << pathquery(a, b) << "\n";
+		}
+	}
+}

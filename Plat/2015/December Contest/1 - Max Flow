@@ -1,0 +1,121 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+vector<vector<int>> edges(2e5 + 1);
+vector<bool> visited(2e5 + 1);
+vector<int> depths(2e5 + 1);
+vector<pair<int, int>> tra(0);
+vector<vector<int>> children(2e5 + 1);
+int depth = 0;
+vector<pair<int, int>> ab(2e5 + 1);
+vector<int> ans(2e5 + 1);
+
+void firstdfs(int node)
+{
+	visited[node] = true;
+	for (int i = 0; i < edges[node].size(); i++) if (!visited[edges[node][i]])
+	{
+		children[node].push_back(edges[node][i]);
+		firstdfs(edges[node][i]);
+	}
+}
+
+void dfs(int node)
+{
+	depth++;
+	tra.push_back({ depth, node });
+	depths[node] = depth;
+	for (int i = 0; i < children.at(node).size(); i++)
+	{
+		dfs(children.at(node).at(i));
+		tra.push_back({ depth, node });
+	}
+
+	depth--;
+}
+
+void finaldfs(int node)
+{
+	ans[node] = ab[node].first - ab[node].second;
+	for (int i = 0; i < children[node].size(); i++)
+	{
+		finaldfs(children[node][i]);
+		ans[node] += ans[children[node][i]] - ab[children[node][i]].second;
+	}
+}
+
+pair<int, int> m(pair<int, int> a, pair<int, int> b)
+{
+	if (a.first < b.first) return a;
+	if (b.first < a.first) return b;
+	if (a.second < b.second) return a;
+	return b;
+}
+
+int main()
+{
+	ifstream fin("maxflow.in");
+	ofstream fout("maxflow.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, q;
+	fin >> n >> q;
+
+	for (int i = 1; i < n; i++)
+	{
+		int a, b;
+		fin >> a >> b;
+		edges[a].push_back(b), edges[b].push_back(a);
+	}
+
+	firstdfs(1);
+	dfs(1);
+	vector<vector<pair<int, int>>> precomp(0);
+	precomp.push_back(tra);
+	int num = 2;
+	int ind = 0;
+	while (num <= tra.size())
+	{
+		vector<pair<int, int>> toins;
+		for (int i = 0; i <= tra.size() - num; i++) toins.push_back(m(precomp.at(ind).at(i), precomp.at(ind).at(i + num / 2)));
+		num *= 2;
+		ind++;
+		precomp.push_back(toins);
+	}
+
+	vector<int> inv(n + 1);
+	for (int i = tra.size() - 1; i > -1; i--) inv.at(tra.at(i).second) = i;
+
+	for (int i = 0; i < q; i++)
+	{
+		int a, b;
+		fin >> a >> b;
+		int newa = inv.at(a);
+		int newb = inv.at(b);
+		if (newa > newb) swap(newa, newb);
+
+		int diff = newb - newa + 1;
+		int exp = 0;
+		while (diff > 1)
+		{
+			diff /= 2;
+			exp++;
+		}
+
+		int k = 1 << exp;
+		int lca = m(precomp.at(exp).at(newa), precomp.at(exp).at(newb - k + 1)).second;
+		ab[a].first++, ab[b].first++;
+		ab[lca].second++;
+	}
+
+	finaldfs(1);
+	int fans = 0;
+	for (int i = 1; i <= n; i++) fans = fmax(fans, ans[i]);
+	fout << fans;
+}

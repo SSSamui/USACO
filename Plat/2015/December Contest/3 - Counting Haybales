@@ -1,0 +1,131 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int maxn = 2e5 + 5;
+const ll INF = 1e11;
+
+struct node
+{
+	ll lz, sv, mv;
+};
+
+node tree[maxn << 2];
+int a[maxn];
+
+void pushup(int p)
+{
+	tree[p].mv = fmin(tree[2 * p].mv, tree[2 * p + 1].mv);
+	tree[p].sv = tree[2 * p].sv + tree[2 * p + 1].sv;
+	return;
+}
+
+void pushdown(int p, int l, int mid, int r)
+{
+	if (tree[p].lz != 0)
+	{
+		tree[2 * p].lz += tree[p].lz, tree[2 * p + 1].lz += tree[p].lz;
+		tree[2 * p].mv += tree[p].lz, tree[2 * p + 1].mv += tree[p].lz;
+		tree[2 * p].sv += tree[p].lz * (mid - l + 1), tree[2 * p + 1].sv += tree[p].lz * (r - mid);
+		tree[p].lz = 0;
+	}
+}
+
+void build(int p, int l, int r)
+{
+	tree[p].lz = 0;
+	if (l == r)
+	{
+		tree[p].mv = a[l];
+		tree[p].sv = a[l];
+		return;
+	}
+
+	int mid = l + (r - l) / 2;
+	build(2 * p, l, mid);
+	build(2 * p + 1, mid + 1, r);
+	pushup(p);
+	return;
+}
+
+void add(int p, int l, int r, int a, int b, ll val)
+{
+	if ((a > r) || (b < l)) return;
+	if ((a <= l) && (r <= b))
+	{
+		tree[p].mv += val;
+		tree[p].sv += val * (r - l + 1);
+		tree[p].lz += val;
+		return;
+	}
+
+	int mid = l + (r - l) / 2;
+	pushdown(p, l, mid, r);
+	add(2 * p, l, mid, a, b, val);
+	add(2 * p + 1, mid + 1, r, a, b, val);
+	pushup(p);
+	return;
+}
+
+ll squery(int p, int l, int r, int a, int b)
+{
+	if ((a > r) || (b < l)) return 0;
+	if ((a <= l) && (r <= b)) return tree[p].sv;
+	int mid = l + (r - l) / 2;
+	pushdown(p, l, mid, r);
+	return squery(2 * p, l, mid, a, b) + squery(2 * p + 1, mid + 1, r, a, b);
+}
+
+ll mquery(int p, int l, int r, int a, int b)
+{
+	if ((a > r) || (b < l)) return INF;
+	if ((a <= l) && (r <= b)) return tree[p].mv;
+	int mid = l + (r - l) / 2;
+	pushdown(p, l, mid, r);
+	return fmin(mquery(2 * p, l, mid, a, b), mquery(2 * p + 1, mid + 1, r, a, b));
+}
+
+int main()
+{
+	ifstream fin("haybales.in");
+	ofstream fout("haybales.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, q;
+	fin >> n >> q;
+	for (int i = 1; i <= n; i++) fin >> a[i];
+	build(1, 1, n);
+
+	while (q--)
+	{
+		char c;
+		fin >> c;
+		if (c == 'M')
+		{
+			int a, b;
+			fin >> a >> b;
+			fout << mquery(1, 1, n, a, b) << "\n";
+		}
+
+		else if (c == 'S')
+		{
+			int a, b;
+			fin >> a >> b;
+			fout << squery(1, 1, n, a, b) << "\n";
+		}
+
+		else
+		{
+			int a, b;
+			ll v;
+			fin >> a >> b >> v;
+			add(1, 1, n, a, b, v);
+		}
+	}
+}

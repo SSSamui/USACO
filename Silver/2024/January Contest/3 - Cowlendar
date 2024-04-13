@@ -1,0 +1,86 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	set<ll> mlengths;
+	while (n--)
+	{
+		ll a;
+		cin >> a;
+		mlengths.insert(a);
+	}
+
+	if (mlengths.size() < 4)
+	{
+		ll ans = *mlengths.begin();
+		ans /= 4;
+		if (ans % 2 == 0)
+		{
+			ans /= 2;
+			ans *= (2 * ans + 1);
+		}
+
+		else
+		{
+			ans++;
+			ans /= 2;
+			ans *= (2 * ans - 1);
+		}
+
+		cout << ans;
+	}
+
+	else
+	{
+		set<ll> possdiv;
+		vector<ll> mleng(0);
+		for (int i = 0; i < 4; i++)
+		{
+			mleng.push_back(*mlengths.begin());
+			mlengths.erase(mlengths.begin());
+		}
+
+		for (int i = 0; i < 4; i++) mlengths.insert(mleng[i]);
+		vector<ll> div(6);
+		div[0] = mleng[0] - mleng[1], div[1] = mleng[0] - mleng[2], div[2] = mleng[0] - mleng[3],
+			div[3] = mleng[1] - mleng[2], div[4] = mleng[1] - mleng[3], div[5] = mleng[2] - mleng[3];
+		for (int i = 0; i < 6; i++) div[i] = -div[i];
+		for (int i = 0; i < 6; i++)
+		{
+			vector<ll> currdiv;
+			for (ll j = 1; j * j <= div[i]; j++) if (div[i] % j == 0) currdiv.push_back(j);
+			for (int j = 0; j < currdiv.size(); j++) possdiv.insert(currdiv[j]);
+			for (int j = 0; j < currdiv.size(); j++)
+			{
+				ll add = div[i] / currdiv[j];
+				possdiv.insert(add);
+			}
+		}
+
+		ll ans = 0;
+		for (ll element : possdiv) if (element * 4 <= mleng[0])
+		{
+			set<ll> rem;
+			for (ll el1 : mlengths)
+			{
+				ll currrem = el1 % element;
+				rem.insert(currrem);
+			}
+
+			if (rem.size() < 4) ans += element;
+		}
+
+		cout << ans;
+	}
+}

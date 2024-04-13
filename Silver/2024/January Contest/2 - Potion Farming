@@ -1,0 +1,55 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+vector<int> leaves(1e5 + 1, 0);
+vector<int> potions(1e5 + 1, 0);
+vector<vector<int>> edges(1e5 + 1);
+
+void leafdfs(int node = 1, int p = 0)
+{
+	for (int i = 0; i < edges[node].size(); i++) if (edges[node][i] != p)
+	{
+		leafdfs(edges[node][i], node);
+		leaves[node] += leaves[edges[node][i]];
+	}
+
+	if (leaves[node] == 0) leaves[node] = 1;
+}
+
+void potiondfs(int node = 1, int p = 0)
+{
+	for (int i = 0; i < edges[node].size(); i++) if (edges[node][i] != p)
+	{
+		potiondfs(edges[node][i], node);
+		potions[node] += potions[edges[node][i]];
+	}
+
+	potions[node] = fmin(potions[node], leaves[node]);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+
+	vector<int> spawn(n);
+	for (int i = 0; i < n; i++) cin >> spawn[i];
+
+	for (int i = 1; i < n; i++)
+	{
+		int a, b;
+		cin >> a >> b;
+		edges[a].push_back(b), edges[b].push_back(a);
+	}
+
+	leafdfs();
+	for (int i = 0; i < leaves[1]; i++) potions[spawn[i]]++;
+	potiondfs();
+	cout << potions[1];
+}

@@ -1,0 +1,116 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <set>
+using namespace std;
+
+vector<int> tree(1 << 18, 1);
+
+void update(int ind, int toupd)
+{
+	ind += (1 << 17);
+	tree[ind] = toupd;
+	while (ind > 1)
+	{
+		ind /= 2;
+		tree[ind] = fmax(tree[2 * ind], tree[2 * ind + 1]);
+	}
+}
+
+int query(int l, int r)
+{
+	int ans = 0;
+	l += (1 << 17), r += (1 << 17);
+	while (l <= r)
+	{
+		if (l % 2 == 1) ans = fmax(ans, tree[l++]);
+		if (r % 2 == 0) ans = fmax(ans, tree[r--]);
+		l /= 2, r /= 2;
+	}
+
+	return ans;
+}
+
+void solve()
+{
+	int n, m, c;
+	cin >> n >> m >> c;
+
+	set<int> zeroes;
+	for (int i = 1; i <= n; i++)
+	{
+		int a;
+		cin >> a;
+		if (a != 0) update(i, a);
+		else
+		{
+			zeroes.insert(i);
+			update(i, 1);
+		}
+	}
+
+	vector<pair<int, int>> q(m);
+	for (int i = 0; i < m; i++) cin >> q[i].first >> q[i].second;
+	sort(q.begin(), q.end());
+
+	for (int i = 1; i < m; i++) if ((q[i].second < q[i - 1].second) ||
+		((q[i].first < q[i - 1].second) && (q[i - 1].second < q[i].second)))
+	{
+		cout << "-1\n";
+		return;
+	}
+
+	vector<pair<int, int>> newqs(0);
+	newqs.push_back(q[0]);
+	for (int i = 1; i < m; i++) if (q[i].second > q[i - 1].second) newqs.push_back(q[i]);
+	m = newqs.size();
+
+	for (int i = 0; i < m; i++) for (int j = newqs[i].first + 1; j < newqs[i].second; j++) zeroes.erase(j);
+	set<int> negzeroes;
+	for (int element : zeroes) negzeroes.insert(-element);
+
+	for (int i = 0; i < m; i++)
+	{
+		int potupd = query(newqs[i].first + 1, newqs[i].second - 1);
+		if (potupd > query(1, newqs[i].first))
+		{
+			if (negzeroes.lower_bound(-newqs[i].first) == negzeroes.end())
+			{
+				cout << "-1\n";
+				return;
+			}
+
+			int indupd = *negzeroes.lower_bound(-newqs[i].first);
+			indupd = -indupd;
+			update(indupd, potupd);
+		}
+
+		potupd = query(1, newqs[i].first);
+		potupd++;
+		if (zeroes.count(newqs[i].second) == 1) update(newqs[i].second, potupd);
+	}
+
+	for (int i = 1; i <= n; i++) if (query(i, i) > c)
+	{
+		cout << "-1\n";
+		return;
+	}
+
+	for (int i = 0; i < m; i++) if (query(newqs[i].second, newqs[i].second) <= query(1, newqs[i].first))
+	{
+		cout << "-1\n";
+		return;
+	}
+
+	for (int i = 1; i < n; i++) cout << query(i, i) << ' ';
+	cout << query(n, n) << "\n";
+}
+
+int main()
+{
+	int t;
+	cin >> t;
+	while (t--) solve();
+}

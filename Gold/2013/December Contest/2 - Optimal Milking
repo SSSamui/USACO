@@ -1,0 +1,88 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+struct node
+{
+	ll lr, nlr, lnr, nlnr;
+};
+
+vector<ll> mk(5e4 + 1);
+vector<node> tree(3e5);
+
+void updatenode(int p)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	if ((tree[lc].nlr == 0) && (tree[rc].nlr == 0))
+	{
+		tree[p].lr = 0;
+		tree[p].nlnr = 0;
+		tree[p].nlr = tree[rc].lr;
+		tree[p].lnr = tree[lc].lr;
+		return;
+	}
+
+	tree[p].lr = fmax(tree[lc].lr + tree[rc].nlr, tree[lc].lnr + fmax(tree[rc].lr, tree[rc].nlr));
+	tree[p].nlr = fmax(tree[lc].nlr + tree[rc].nlr, tree[lc].nlnr + fmax(tree[rc].lr, tree[rc].nlr));
+	tree[p].lnr = fmax(tree[lc].lr + tree[rc].nlnr, tree[lc].lnr + fmax(tree[rc].lnr, tree[rc].nlnr));
+	tree[p].nlnr = fmax(tree[lc].nlr + tree[rc].nlnr, tree[lc].nlnr + fmax(tree[rc].lnr, tree[rc].nlnr));
+}
+
+void build(int p, int l, int r)
+{
+	if (l == r)
+	{
+		tree[p].lr = mk[l];
+		return;
+	}
+
+	int m = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	build(lc, l, m);
+	build(rc, m + 1, r);
+	updatenode(p);
+}
+
+void updatepoint(int p, int l, int r, int toupd, ll updval)
+{
+	if (l == r)
+	{
+		tree[p].lr = updval;
+		return;
+	}
+
+	int m = l + (r - l) / 2;
+	if (toupd > m) updatepoint(2 * p + 1, m + 1, r, toupd, updval);
+	else updatepoint(2 * p, l, m, toupd, updval);
+	updatenode(p);
+}
+
+int main()
+{
+	ifstream fin("optmilk.in");
+	ofstream fout("optmilk.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, d;
+	fin >> n >> d;
+	for (int i = 1; i <= n; i++) fin >> mk[i];
+	build(1, 1, n);
+
+	ll ans = 0;
+	while (d--)
+	{
+		int toupd;
+		ll updval;
+		fin >> toupd >> updval;
+		updatepoint(1, 1, n, toupd, updval);
+		ans += fmax(fmax(tree[1].lr, tree[1].nlr), fmax(tree[1].lnr, tree[1].nlnr));
+	}
+
+	fout << ans;
+}

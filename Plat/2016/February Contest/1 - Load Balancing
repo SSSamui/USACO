@@ -1,0 +1,96 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+const int TREESZ = 1 << 20;
+
+struct tree
+{
+	vector<int> tree;
+	void add(int ind, int toadd)
+	{
+		ind += TREESZ;
+		while (ind > 1)
+		{
+			tree[ind] += toadd;
+			ind /= 2;
+		}
+	}
+};
+
+tree e, w;
+int query()
+{
+	int ensz = 0, wnsz = 0, essz = 0, wssz = 0;
+	int check = 1;
+	while (check < 2 * TREESZ)
+	{
+		int l, r;
+
+		if (check < TREESZ)
+		{
+			l = 2 * check, r = 2 * check + 1;
+		}
+
+		else
+		{
+			l = check, r = check;
+		}
+
+		if (fmax(essz + e.tree[l], wssz + w.tree[l]) < fmax(ensz + e.tree[r], wnsz + w.tree[r]))
+		{
+			if (check < TREESZ) check = r;
+			else check = 2 * check;
+			essz += e.tree[l], wssz += w.tree[l];
+		}
+
+		else
+		{
+			if (check < TREESZ) check = l;
+			else check = 2 * check;
+			ensz += e.tree[r], wnsz += w.tree[r];
+		}
+	}
+
+	return fmax(fmax(essz, wssz), fmax(ensz, wnsz));
+}
+
+int main()
+{
+	ifstream fin("balancing.in");
+	ofstream fout("balancing.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	e.tree.resize(2 * TREESZ), w.tree.resize(2 * TREESZ);
+
+	int n;
+	fin >> n;
+
+	vector<pair<int, int>> coords(n);
+	for (int i = 0; i < n; i++) fin >> coords[i].first >> coords[i].second;
+	sort(coords.begin(), coords.end());
+	coords.push_back({ 1000001, 1000001 });
+
+	for (int i = 0; i < n; i++) e.add(coords[i].second, 1);
+
+	int ind = 0;
+	int ans = n;
+	while (ind < n)
+	{
+		ans = fmin(ans, query());
+		int j = ind;
+		while (coords[ind].first == coords[j].first)
+		{
+			e.add(coords[ind].second, -1), w.add(coords[ind].second, 1);
+			ind++;
+		}
+	}
+
+	fout << ans;
+}

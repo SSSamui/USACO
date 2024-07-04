@@ -1,0 +1,64 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <string>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+
+	vector<vector<int>> pref(n, vector<int>(n));
+	vector<int> adj(n);
+	for (int i = 0; i < n; i++)
+	{
+		bool add = true;
+		for (int j = 0; j < n; j++)
+		{
+			cin >> pref[i][j];
+			pref[i][j]--;
+			if (add) adj[i] ^= (1 << pref[i][j]);
+			if (pref[i][j] == i) add = false;
+		}
+	}
+
+	int sz = 1 << n;
+	vector<ll> ans(sz);
+	vector<vector<ll>> dp(sz, vector<ll>(n));
+	ans[0] = 1;
+	for (int k = 0; k < n; k++) dp[1 << k][k] = 1;
+	for (int i = 0; i < n; i++) for (int mask = (1 << i); mask < (1 << (i + 1)); mask++)
+	{
+		for (int last = 0; last <= i; last++)
+		{
+			if (adj[last] & (1 << i)) ans[mask] += dp[mask][last];
+			for (int k = 0; k < i; k++) if ((!(mask & (1 << k))) && (adj[last] & (1 << k)))
+				dp[mask + (1 << k)][k] += dp[mask][last];
+		}
+
+		for (int k = i + 1; k < n; k++) dp[mask + (1 << k)][k] += ans[mask];
+	}
+
+	int _;
+	cin >> _;
+	while (_--)
+	{
+		string s;
+		cin >> s;
+
+		int g = 0, h = 0;
+		for (int i = 0; i < n; i++)
+		{
+			if (s[i] == 'G') g += (1 << i);
+			else h += (1 << i);
+		}
+
+		cout << ans[g] * ans[h] << "\n";
+	}
+}

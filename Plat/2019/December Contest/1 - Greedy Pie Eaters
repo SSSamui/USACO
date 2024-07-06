@@ -1,0 +1,44 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const ll one = 1;
+
+int main()
+{
+	ifstream fin("pieaters.in");
+	ofstream fout("pieaters.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, m;
+	fin >> n >> m;
+
+	vector<vector<int>> ws(n + 1, vector<int>(n + 1, 0));
+	while (m--)
+	{
+		int w, a, b;
+		fin >> w >> a >> b;
+		ws[a][b] = w;
+	}
+
+	vector<vector<pair<ll, vector<int>>>> dp(n + 2, vector<pair<ll, vector<int>>>(n + 1, { 0, vector<int>(n + 1, 0) }));
+	for (int i = 1; i <= n; i++)
+	{
+		dp[i][i].first = one * ws[i][i];
+		dp[i][i].second[i] = ws[i][i];
+	}
+
+	for (int i = 1; i < n; i++) for (int j = n; j > i; j--) for (int k = j - i; k <= j; k++)
+	{
+		dp[j - i][j].second[k] = fmax(ws[j - i][j], fmax(dp[j - i + 1][j].second[k], dp[j - i][j - 1].second[k]));
+		dp[j - i][j].first = fmax(dp[j - i][j].first, dp[j - i][k - 1].first + dp[k + 1][j].first + one * dp[j - i][j].second[k]);
+	}
+
+	fout << dp[1][n].first;
+}

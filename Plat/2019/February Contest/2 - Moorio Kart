@@ -1,0 +1,83 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <map>
+#include <cassert>
+using namespace std;
+using ll = long long;
+
+vector<vector<pair<int, int>>> adj(1501, vector<pair<int, int>>(0));
+vector<int> comp(0);
+vector<int> dist(0);
+vector<bool> visited(1501, false);
+
+const int MOD = 1e9 + 7;
+
+void dfs1(int node, int p = -1)
+{
+	comp.push_back(node);
+	visited[node] = true;
+	for (pair<int, int> i : adj[node]) if (i.first != p) dfs1(i.first, node);
+}
+
+void dfs2(int node, int orig, int p = -1, int d = 0)
+{
+	for (pair<int, int> i : adj[node]) if (i.first != p)
+	{
+		if (i.first > orig) dist.push_back(d + i.second);
+		dfs2(i.first, orig, node, d + i.second);
+	}
+}
+
+int main()
+{
+	ifstream fin("mooriokart.in");
+	ofstream fout("mooriokart.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, m, x, y;
+	fin >> n >> m >> x >> y;
+	int k = n - m;
+
+	map<int, pair<ll, ll>> dp;
+	dp[fmin(y, x * k)] = { x * k, 1 };
+
+	while (m--)
+	{
+		int a, b, c;
+		fin >> a >> b >> c;
+		adj[a].push_back({ b, c }), adj[b].push_back({ a, c });
+	}
+
+	for (int i = 1; i <= n; i++) if (!visited[i])
+	{
+		comp.clear(), dist.clear();
+		dfs1(i);
+		for (int node : comp) dfs2(node, node);
+		
+		map<int, pair<ll, ll>> toadd;
+		for (int d : dist)
+		{
+			if (toadd.count(fmin(y, d)) == 0) toadd[fmin(y, d)] = {0, 0};
+			toadd[fmin(d, y)] = { (toadd[fmin(d, y)].first + d) % MOD, toadd[fmin(d, y)].second + 1 };
+		}
+
+		map<int, pair<ll, ll>> ndp;
+		for (auto it1 : dp) for (auto it2 : toadd)
+		{
+			if (ndp.count(fmin(y, it1.first + it2.first)) == 0) ndp[fmin(y, it1.first + it2.first)] = { 0, 0 };
+			ndp[fmin(y, it1.first + it2.first)] = { (ndp[fmin(y, it1.first + it2.first)].first + it1.second.first *
+				it2.second.second + it2.second.first * it1.second.second) % MOD, (ndp[fmin(y, it1.first + it2.first)].second +
+					it1.second.second * it2.second.second) % MOD };
+		}
+
+		dp = ndp;
+	}
+
+	for (int i = 1; i < k; i++) dp[y].first = (dp[y].first * (2 * i)) % MOD;
+	fout << dp[y].first;
+}

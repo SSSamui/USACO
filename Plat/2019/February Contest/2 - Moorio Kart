@@ -4,7 +4,6 @@
 #include <vector>
 #include <cmath>
 #include <map>
-#include <cassert>
 using namespace std;
 using ll = long long;
 
@@ -43,7 +42,7 @@ int main()
 	fin >> n >> m >> x >> y;
 	int k = n - m;
 
-	map<int, pair<ll, ll>> dp;
+	vector<pair<ll, ll>> dp(y + 1, { 0, 0 });
 	dp[fmin(y, x * k)] = { x * k, 1 };
 
 	while (m--)
@@ -58,22 +57,18 @@ int main()
 		comp.clear(), dist.clear();
 		dfs1(i);
 		for (int node : comp) dfs2(node, node);
-		
+
 		map<int, pair<ll, ll>> toadd;
 		for (int d : dist)
 		{
-			if (toadd.count(fmin(y, d)) == 0) toadd[fmin(y, d)] = {0, 0};
+			if (toadd.count(fmin(y, d)) == 0) toadd[fmin(y, d)] = { 0, 0 };
 			toadd[fmin(d, y)] = { (toadd[fmin(d, y)].first + d) % MOD, toadd[fmin(d, y)].second + 1 };
 		}
 
-		map<int, pair<ll, ll>> ndp;
-		for (auto it1 : dp) for (auto it2 : toadd)
-		{
-			if (ndp.count(fmin(y, it1.first + it2.first)) == 0) ndp[fmin(y, it1.first + it2.first)] = { 0, 0 };
-			ndp[fmin(y, it1.first + it2.first)] = { (ndp[fmin(y, it1.first + it2.first)].first + it1.second.first *
-				it2.second.second + it2.second.first * it1.second.second) % MOD, (ndp[fmin(y, it1.first + it2.first)].second +
-					it1.second.second * it2.second.second) % MOD };
-		}
+		vector<pair<ll, ll>> ndp(y + 1, { 0, 0 });
+		for (int i = 0; i <= y; i++) for (auto it2 : toadd) ndp[fmin(y, i + it2.first)] = { (ndp[fmin(y, i + it2.first)].first
+			+ dp[i].first * it2.second.second + it2.second.first * dp[i].second) % MOD, (ndp[fmin(y, i + it2.first)].second +
+				dp[i].second * it2.second.second) % MOD};
 
 		dp = ndp;
 	}

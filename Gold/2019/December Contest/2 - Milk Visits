@@ -1,0 +1,80 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+const int MXN = 1e5 + 1;
+
+vector<vector<int>> adj(MXN, vector<int>(0));
+vector<vector<int>> queries(MXN, vector<int>(3));
+vector<vector<bool>> ans(MXN, vector<bool>(2, false));
+vector<int> col(MXN);
+vector<pair<int, int>> sbtree(MXN);
+int tmr = -1;
+vector<int> depth(MXN, 0);
+vector<vector<pair<pair<int, int>, pair<int, int>>>> nq(MXN, vector<pair<pair<int, int>, pair<int, int>>>(0));
+vector<int> lstdep(MXN, -1);
+vector<int> trav(0);
+
+void dfs1(int node = 1, int p = 0)
+{
+	sbtree[node].first = ++tmr;
+	for (int nxt : adj[node]) if (nxt != p)
+	{
+		depth[nxt] = depth[node] + 1;
+		dfs1(nxt, node);
+	}
+
+	sbtree[node].second = tmr;
+}
+
+void dfs2(int node = 1, int p = 0)
+{
+	trav.push_back(node);
+	int trev = lstdep[col[node]];
+	lstdep[col[node]] = depth[node];
+	for (pair<pair<int, int>, pair<int, int>> tans : nq[node])
+	{
+		int chkd = lstdep[tans.first.second] + 1;
+		int chknde = trav[chkd];
+		int desc = tans.first.first;
+		if ((sbtree[desc].first < sbtree[chknde].first) || (sbtree[desc].second > sbtree[chknde].second)) ans[tans.second.first][tans.second.second] = true;
+	}
+
+	for (int nxt : adj[node]) if (nxt != p) dfs2(nxt, node);
+
+	lstdep[col[node]] = trev;
+	trav.pop_back();
+}
+
+int main()
+{
+	ifstream fin("milkvisits.in");
+	ofstream fout("milkvisits.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, m;
+	fin >> n >> m;
+	for (int i = 1; i <= n; i++) fin >> col[i];
+	for (int i = 1; i < n; i++)
+	{
+		int a, b;
+		fin >> a >> b;
+		adj[a].push_back(b), adj[b].push_back(a);
+	}
+
+	for (int i = 0; i < m; i++) for (int j = 0; j < 3; j++) fin >> queries[i][j];
+	for (int i = 0; i < m; i++) for (int j = 0; j < 2; j++)
+	{
+		if (col[queries[i][j]] == queries[i][2]) ans[i][j] = true;
+		else nq[queries[i][j]].push_back({ {queries[i][1 - j], queries[i][2]}, {i, j} });
+	}
+
+	dfs1();
+	dfs2();
+	for (int i = 0; i < m; i++) fout << (ans[i][0] || ans[i][1]);
+}

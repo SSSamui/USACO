@@ -1,0 +1,80 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+ll mod, MOD;
+
+ll exp(ll a, ll b)
+{
+	if (b == 0) return 1;
+	if (b % 2 == 1) return (a * exp(a, b - 1)) % MOD;
+	ll ans = exp(a, b / 2);
+	return (ans * ans) % MOD;
+}
+
+int main()
+{
+	ifstream fin("exercise.in");
+	ofstream fout("exercise.out");
+
+	int n;
+	fin >> n >> MOD;
+	mod = MOD - 1;
+
+	vector<ll> fct(n + 1, 1);
+	for (int i = 2; i <= n; i++) fct[i] = (fct[i - 1] * i) % mod;
+	vector<vector<ll>> chs(n + 1, vector<ll>(n + 1, 0));
+	chs[0][0] = 1;
+	for (int i = 1; i <= n; i++)
+	{
+		chs[i][0] = chs[i][i] = 1;
+		for (int j = 1; j < i; j++) chs[i][j] = (chs[i - 1][j - 1] + chs[i - 1][j]) % mod;
+	}
+
+	vector<bool> pme(n + 1, true);
+	ll ans = 1;
+	for (int i = 2; i <= n; i++) if (pme[i])
+	{
+		for (int j = i; j <= n; j += i) pme[j] = false;
+		for (int j = i; j <= n; j *= i)
+		{
+			vector<ll> allmult(n / j + 1, 0);
+			allmult[0] = 1;
+			for (int k = 1; k <= n / j; k++) for (int l = 1; l <= k; l++)
+			{
+				ll tadd = chs[j * k - 1][j * l - 1] * fct[j * l - 1];
+				tadd %= mod;
+				tadd *= allmult[k - l];
+				tadd %= mod;
+				allmult[k] += tadd;
+				allmult[k] %= mod;
+			}
+
+			vector<ll> nonemult(n / j + 1, 0);
+			for (int k = n / j; k > -1; k--)
+			{
+				nonemult[k] = fct[n - j * k];
+				for (int l = n / j; l > k; l--)
+				{
+					ll tsub = chs[n - j * k][n - j * l] * allmult[l - k];
+					tsub %= mod;
+					tsub *= nonemult[l];
+					tsub %= mod;
+					nonemult[k] -= tsub;
+					if (nonemult[k] < 0) nonemult[k] += mod;
+				}
+			}
+
+			ll e = fct[n] - nonemult[0];
+			if (e < 0) e += mod;
+			ans *= exp(i, e);
+			ans %= MOD;
+		}
+	}
+
+	fout << ans;
+}

@@ -1,0 +1,46 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+int main()
+{
+	ifstream fin("dec.in");
+	ofstream fout("dec.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, b;
+	fin >> n >> b;
+	vector<vector<pair<int, int>>> bonuses(n);
+	while (b--)
+	{
+		int k, p, a;
+		fin >> k >> p >> a;
+		bonuses[--k].push_back({ p, a });
+	}
+
+	for (int i = 0; i < n; i++) sort(bonuses[i].begin(), bonuses[i].end());
+	int sz = 1 << n;
+	vector<vector<int>> skill(n, vector<int>(n));
+	for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) fin >> skill[i][j];
+	vector<int> dp(sz, 0);
+	for (int msk = 1; msk < sz; msk++)
+	{
+		int b = -1;
+		for (int bit = 0; bit < n; bit++) if (msk & (1 << bit)) b++;
+		for (int bit = 0; bit < n; bit++) if (msk & (1 << bit)) dp[msk] = fmax(dp[msk], dp[msk ^ (1 << bit)] + skill[bit][b]);
+		int ind = 0;
+		while ((ind < bonuses[b].size()) && (dp[msk] >= bonuses[b][ind].first))
+		{
+			dp[msk] += bonuses[b][ind].second;
+			ind++;
+		}
+	}
+
+	fout << dp.back();
+}

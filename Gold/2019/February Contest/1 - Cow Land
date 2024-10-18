@@ -5,76 +5,77 @@
 #include <cmath>
 using namespace std;
 
-vector<int> sz(1e5 + 1), p(1e5 + 1), dep(1e5 + 1), id(1e5 + 1), tp(1e5 + 1);
-vector<int> tree(1 << 18, 0);
-vector<vector<int>> edges(1e5 + 1);
+const int MXN = 2e5 + 1;
+const int sz = 1 << 18;
 
-void szdfs(int node, int par)
+vector<vector<int>> adj(MXN, vector<int>(0));
+
+vector<int> par(MXN), sbtreesz(MXN, 1), top(MXN), dep(MXN, 0);
+vector<int> indnde(MXN);
+
+vector<int> segtree(2 * sz, 0);
+
+int ind = -1;
+
+void update(int node, int toupd)
 {
-	sz[node] = 1, p[node] = par;
-	for (int i = 0; i < edges[node].size(); i++) if (edges[node][i] != par)
+	node += sz;
+	segtree[node] = toupd;
+	while (node > 1)
 	{
-		dep[edges[node][i]] = dep[node] + 1;
-		szdfs(edges[node][i], node);
-		sz[node] += sz[edges[node][i]];
+		node /= 2;
+		segtree[node] = segtree[2 * node] ^ segtree[2 * node + 1];
 	}
 }
 
-int cnt = 0;
-
-void hldfs(int node, int par, int top)
+int rq(int l, int r)
 {
-	id[node] = cnt++, tp[node] = top;
-	if (edges[node].size() < 2) return;
-
-	int next = -1, siz = -1;
-	for (int i = 0; i < edges[node].size(); i++) if ((edges[node][i] != par) && (sz[edges[node][i]] > siz))
-	{
-		siz = sz[edges[node][i]], next = edges[node][i];
-	}
-
-	hldfs(next, node, top);
-	for (int i = 0; i < edges[node].size(); i++) if ((edges[node][i] != par) && (edges[node][i] != next))
-		hldfs(edges[node][i], node, edges[node][i]);
-}
-
-void treeupd(int ind, int val)
-{
-	ind += (1 << 17);
-	tree[ind] = val;
-	while (ind > 1)
-	{
-		ind /= 2;
-		tree[ind] = tree[2 * ind] ^ tree[2 * ind + 1];
-	}
-}
-
-int treequery(int l, int r)
-{
-	l += (1 << 17), r += (1 << 17);
+	l += sz, r += sz;
 	int ans = 0;
 	while (l <= r)
 	{
-		if (l % 2 == 1) ans ^= tree[l++];
-		if (r % 2 == 0) ans ^= tree[r--];
+		if (l % 2 == 1) ans = ans ^ segtree[l++];
+		if (r % 2 == 0) ans = ans ^ segtree[r--];
 		l /= 2, r /= 2;
 	}
 
 	return ans;
 }
 
-int pathquery(int a, int b)
+void sbtreedfs(int node = 1, int p = 0)
+{
+	for (int nxt : adj[node]) if (nxt != p)
+	{
+		dep[nxt] = dep[node] + 1;
+		sbtreedfs(nxt, node);
+		par[nxt] = node, sbtreesz[node] += sbtreesz[nxt];
+	}
+}
+
+void hldfs(int node = 1, int p = 0, int tp = 1)
+{
+	indnde[node] = ++ind, top[node] = tp;
+	int nxtnde = node, nxtsz = 0;
+	for (int nxt : adj[node]) if ((sbtreesz[nxt] > nxtsz) && (nxt != p)) nxtnde = nxt, nxtsz = sbtreesz[nxt];
+	if (nxtnde != node)
+	{
+		hldfs(nxtnde, node, tp);
+		for (int nxt : adj[node]) if ((nxt != p) && (nxt != nxtnde)) hldfs(nxt, node, nxt);
+	}
+}
+
+int pq(int x, int y)
 {
 	int ans = 0;
-	while (tp[a] != tp[b])
+	while (top[x] != top[y])
 	{
-		if (dep[tp[a]] > dep[tp[b]]) swap(a, b);
-		ans ^= treequery(id[tp[b]], id[b]);
-		b = p[tp[b]];
+		if (dep[top[x]] < dep[top[y]]) swap(x, y);
+		ans = ans ^ rq(indnde[top[x]], indnde[x]);
+		x = par[top[x]];
 	}
 
-	if (dep[a] > dep[b]) swap(a, b);
-	ans ^= treequery(id[a], id[b]);
+	if (dep[x] > dep[y]) swap(x, y);
+	ans = ans ^ rq(indnde[x], indnde[y]);
 	return ans;
 }
 
@@ -86,39 +87,26 @@ int main()
 	ios::sync_with_stdio(false);
 	fin.tie(nullptr);
 
-	int n, q;
-	fin >> n >> q;
-
-	vector<int> enj(n + 1);
-	for (int i = 1; i <= n; i++) fin >> enj[i];
+	int n, _;
+	fin >> n >> _;
+	vector<int> v(n + 1);
+	for (int i = 1; i <= n; i++) fin >> v[i];
 	for (int i = 1; i < n; i++)
 	{
 		int a, b;
 		fin >> a >> b;
-		edges[a].push_back(b), edges[b].push_back(a);
+		adj[a].push_back(b), adj[b].push_back(a);
 	}
 
-	szdfs(1, 1);
-	hldfs(1, 1, 1);
-	for (int i = 1; i <= n; i++) treeupd(id[i], enj[i]);
-	
-	while (q--)
+	sbtreedfs();
+	hldfs();
+	for (int i = 1; i <= n; i++) update(indnde[i], v[i]);
+
+	while (_--)
 	{
-		int Q;
-		fin >> Q;
-
-		if (Q == 1)
-		{
-			int ind, e;
-			fin >> ind >> e;
-			treeupd(id[ind], e);
-		}
-
-		else
-		{
-			int a, b;
-			fin >> a >> b;
-			fout << pathquery(a, b) << "\n";
-		}
+		int q, a, b;
+		fin >> q >> a >> b;
+		if (q == 1) update(indnde[a], b);
+		else fout << pq(a, b) << "\n";
 	}
 }

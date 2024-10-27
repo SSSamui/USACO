@@ -1,0 +1,90 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <map>
+using namespace std;
+using ll = long long;
+
+const int MXN = 1e5 + 1;
+const ll one = 1;
+
+vector<pair<int, int>> adj[MXN];
+int dep[MXN], sbtreesz[MXN];
+bool delet[MXN];
+ll ttlstr = 0, rem = 0;
+map<int, pair<int, int>> cnt;
+
+int detsbtreesz(int node, int p = 0)
+{
+	sbtreesz[node] = 1;
+	for (pair<int, int> nxt : adj[node]) if (!delet[nxt.first]) if (nxt.first != p) sbtreesz[node] += detsbtreesz(nxt.first, node);
+	return sbtreesz[node];
+}
+
+int detcent(int node, int thld, int p = 0)
+{
+	for (pair<int, int> nxt : adj[node]) if (!delet[nxt.first]) if (sbtreesz[nxt.first] > thld) if (nxt.first != p)
+		return detcent(nxt.first, thld, node);
+	return node;
+}
+
+void depdfs(int node, int p = 0)
+{
+	map<int, pair<int, int>> tmerg;
+	for (pair<int, int> nxt : adj[node]) if (!delet[nxt.first]) if (nxt.first != p)
+	{
+		swap(cnt, tmerg), dep[nxt.first] = dep[node] + nxt.second;
+		depdfs(nxt.first, node);
+		for (pair<int, pair<int, int>> tadd : tmerg) cnt[tadd.first].first += tadd.second.first, cnt[tadd.first].second += tadd.second.second;
+		tmerg.clear();
+	}
+
+	cnt[dep[node]].first++, cnt[dep[node]].second = 1;
+}
+
+void centdecomp(int node = 1)
+{
+	node = detcent(node, detsbtreesz(node) / 2);
+	delet[node] = true;
+	map<int, pair<int, int>> chk;
+	for (pair<int, int> nxt : adj[node]) if (!delet[nxt.first])
+	{
+		dep[nxt.first] = nxt.second;
+		depdfs(nxt.first);
+		for (pair<int, pair<int, int>> tadd : cnt)
+		{
+			ttlstr += one * tadd.second.first * chk[-tadd.first].first;
+			if (tadd.first != 0) rem += one * tadd.second.second * chk[-tadd.first].second;
+		}
+
+		ttlstr += cnt[0].first, rem += cnt[0].second;
+		for (pair<int, pair<int, int>> tadd : cnt) chk[tadd.first].first += tadd.second.first, chk[tadd.first].second += tadd.second.second;
+		cnt.clear();
+	}
+
+	for (pair<int, int> nxt : adj[node]) if (!delet[nxt.first]) centdecomp(nxt.first);
+}
+
+int main()
+{
+	ifstream fin("yinyang.in");
+	ofstream fout("yinyang.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n;
+	for (int i = 1; i < n; i++)
+	{
+		int a, b, c;
+		fin >> a >> b >> c;
+		if (c == 0) adj[a].push_back({ b, -1 }), adj[b].push_back({ a, -1 });
+		else adj[a].push_back({ b, 1 }), adj[b].push_back({ a, 1 });
+	}
+
+	centdecomp();
+	fout << ttlstr - rem;
+}

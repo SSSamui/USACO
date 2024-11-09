@@ -1,0 +1,61 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+const int MXN = 2e5 + 1;
+ll l;
+
+vector<vector<pair<int, ll>>> adj(MXN);
+vector<multiset<ll>> depset(MXN);
+vector<ll> dep(MXN, 0);
+vector<int> ans(MXN);
+
+void dfs(int node = 1)
+{
+	depset[node].insert(dep[node]);
+	for (pair<int, ll> nxt : adj[node])
+	{
+		dep[nxt.first] = dep[node] + nxt.second;
+		dfs(nxt.first);
+		if (depset[node].size() < depset[nxt.first].size()) swap(depset[node], depset[nxt.first]);
+		for (ll toins : depset[nxt.first]) depset[node].insert(toins);
+	}
+
+	while (true)
+	{
+		auto it = depset[node].end();
+		it--;
+		if (*it - dep[node] > l) depset[node].erase(*it);
+		else break;
+	}
+
+	ans[node] = depset[node].size();
+}
+
+int main()
+{
+	ifstream fin("runaway.in");
+	ofstream fout("runaway.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n >> l;
+	for (int i = 2; i <= n; i++)
+	{
+		int a;
+		ll b;
+		fin >> a >> b;
+		adj[a].push_back({ i, b });
+	}
+
+	dfs();
+	for (int i = 1; i <= n; i++) fout << ans[i] << "\n";
+}

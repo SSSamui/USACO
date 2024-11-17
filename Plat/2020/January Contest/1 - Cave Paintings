@@ -1,0 +1,86 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+using namespace std;
+using ll = long long;
+
+const int MXN = 1000;
+const ll MOD = 1e9 + 7;
+
+vector<vector<char>> painting(MXN, vector<char>(MXN));
+vector<vector<int>> p(MXN, vector<int>(MXN)), par(MXN, vector<int>(MXN, 0));
+vector<vector<vector<int>>> chd(MXN, vector<vector<int>>(MXN, vector<int>(0)));
+vector<vector<ll>> dp(MXN, vector<ll>(MXN, 0));
+vector<set<int>> rts(MXN);
+
+int rt(int r, int c)
+{
+	if (p[r][c] == c) return c;
+	p[r][c] = rt(r, p[r][c]);
+	return p[r][c];
+}
+
+void join(int r, int c1, int c2)
+{
+	c1 = rt(r, c1), c2 = rt(r, c2);
+	if (c1 == c2) return;
+	if (chd[r][c1].size() < chd[r][c2].size()) swap(c1, c2);
+	rts[r].erase(c2);
+	for (int tins : chd[r][c2]) chd[r][c1].push_back(tins), par[r + 1][tins] = c1;
+	chd[r][c2].clear();
+	p[r][c2] = c1;
+}
+
+int main()
+{
+	ifstream fin("cave.in");
+	ofstream fout("cave.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, m;
+	fin >> n >> m;
+	for (int i = 0; i < n; i++) for (int j = 0; j < m; j++) p[i][j] = j, rts[i].insert(j);
+	for (int i = 0; i < n; i++) for (int j = 0; j < m; j++) fin >> painting[i][j];
+
+	for (int i = n - 2; i > 0; i--)
+	{
+		for (int j = 0; j < m; j++) if (painting[i][j] == '#') rts[i].erase(j), p[i][j] = 0;
+		for (int j = 1; j < m - 1; j++) if (painting[i][j] == '.')
+		{
+			if (painting[i][j - 1] == '.') join(i, j - 1, j);
+			if (painting[i + 1][j] == '.')
+			{
+				if (par[i + 1][p[i + 1][j]] == 0) par[i + 1][p[i + 1][j]] = rt(i, j), chd[i][rt(i, j)].push_back(p[i + 1][j]), rts[i + 1].erase(p[i + 1][j]);
+				else join(i, par[i + 1][p[i + 1][j]], j);
+			}
+		}
+
+		for (int j = 1; j < m - 1; j++) if (painting[i][j] == '.') p[i][j] = rt(i, j);
+		for (int root : rts[i])
+		{
+			dp[i][root] = 1;
+			for (int nxt : chd[i][root])
+			{
+				dp[i][root] *= dp[i + 1][nxt];
+				dp[i][root] %= MOD;
+			}
+
+			dp[i][root]++;
+			dp[i][root] %= MOD;
+		}
+	}
+
+	ll ans = 1;
+	for (int i = 1; i < n - 1; i++) for (int root : rts[i])
+	{
+		ans *= dp[i][root];
+		ans %= MOD;
+	}
+
+	fout << ans;
+}

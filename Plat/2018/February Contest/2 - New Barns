@@ -1,0 +1,127 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+using namespace std;
+
+const int MXN = 1e5 + 1;
+
+vector<int> adj[MXN], qrys[MXN], ans(MXN, 0);
+int dep[MXN], sbtreesz[MXN], tp[MXN];
+bool delet[MXN];
+int dpst, dpst2, tpdpst;
+set<int> prced, modqry;
+set<pair<int, int>> tprc;
+vector<pair<int, int>> qry(0);
+
+int detsbtreesz(int node, int p = 0)
+{
+	sbtreesz[node] = 1;
+	for (int nxt : adj[node]) if (!delet[nxt]) if (nxt != p) sbtreesz[node] += detsbtreesz(nxt, node);
+	return sbtreesz[node];
+}
+
+int detcent(int node, int thld, int p = 0)
+{
+	for (int nxt : adj[node]) if (!delet[nxt]) if (sbtreesz[nxt] > thld) if (nxt != p)
+		return detcent(nxt, thld, node);
+	return node;
+}
+
+void dfs1(int node, int cent, int p = 0)
+{
+	for (int qrynum : qrys[node]) if (qry[qrynum].second >= cent) modqry.insert(qrynum);
+	for (int nxt : adj[node]) if (!delet[nxt]) if (nxt != p)
+	{
+		dep[nxt] = dep[node] + 1;
+		dfs1(nxt, cent, node);
+	}
+}
+
+void prcnode(int node, int top)
+{
+	tp[node] = top, tprc.erase({ node, top }), prced.insert(node);
+	if (dep[node] > dpst)
+	{
+		if (top != tpdpst) dpst2 = dpst, tpdpst = top;
+		dpst = dep[node];
+	}
+
+	else if (dep[node] > dpst2) if (top != tpdpst) dpst2 = dep[node];
+	for (int nxt : adj[node]) if (!delet[nxt]) if (prced.count(nxt) == 0) tprc.insert({ nxt, top });
+}
+
+void centdecomp(int node)
+{
+	node = detcent(node, detsbtreesz(node) / 2);
+	prced.clear(), tprc.clear(), modqry.clear();
+	delet[node] = true, dep[node] = 0, tp[node] = 0;
+	dpst = 0, dpst2 = 0, tpdpst = 0;
+	for (int nxt : adj[node]) if (!delet[nxt]) tprc.insert({ nxt, nxt });
+	dfs1(node, node);
+	while (!tprc.empty() && !modqry.empty())
+	{
+		if (qry[*modqry.begin()].second >= (*tprc.begin()).first) prcnode((*tprc.begin()).first, (*tprc.begin()).second);
+		else
+		{
+			if (qry[*modqry.begin()].first == node) ans[*modqry.begin()] = fmax(ans[*modqry.begin()], dpst);
+			else if (prced.count(qry[*modqry.begin()].first) == 1)
+			{
+				if (tp[qry[*modqry.begin()].first] == tpdpst) ans[*modqry.begin()] = fmax(ans[*modqry.begin()], dep[qry[*modqry.begin()].first] + dpst2);
+				else ans[*modqry.begin()] = fmax(ans[*modqry.begin()], dep[qry[*modqry.begin()].first] + dpst);
+			}
+
+			modqry.erase(modqry.begin());
+		}
+	}
+
+	while (!modqry.empty())
+	{
+		if (qry[*modqry.begin()].first == node) ans[*modqry.begin()] = fmax(ans[*modqry.begin()], dpst);
+		else if (prced.count(qry[*modqry.begin()].first) == 1)
+		{
+			if (tp[qry[*modqry.begin()].first] == tpdpst) ans[*modqry.begin()] = fmax(ans[*modqry.begin()], dep[qry[*modqry.begin()].first] + dpst2);
+			else ans[*modqry.begin()] = fmax(ans[*modqry.begin()], dep[qry[*modqry.begin()].first] + dpst);
+		}
+
+		modqry.erase(modqry.begin());
+	}
+	
+	for (int nxt : adj[node]) if (!delet[nxt]) centdecomp(nxt);
+}
+
+int main()
+{
+	ifstream fin("newbarn.in");
+	ofstream fout("newbarn.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int _;
+	fin >> _;
+
+	int nds = 0;
+	while (_--)
+	{
+		char c;
+		int a;
+		fin >> c >> a;
+		if (c == 'B')
+		{
+			nds++;
+			if (a > 0) adj[nds].push_back(a), adj[a].push_back(nds);
+		}
+
+		else
+		{
+			qrys[a].push_back(qry.size());
+			qry.push_back({ a, nds });
+		}
+	}
+
+	for (int i = 1; i <= nds; i++) if (!delet[i]) centdecomp(i);
+	for (int i = 0; i < qry.size(); i++) fout << ans[i] << "\n";
+}

@@ -1,0 +1,91 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <stack>
+#include <set>
+using namespace std;
+
+const int MXN = 5001, MXM = 10001;
+
+int tmr = -1;
+vector<int> p(MXN, 0), disc(MXN, 0), low(MXN, 0);
+vector<vector<pair<int, int>>> adj(MXN, vector<pair<int, int>>(0));
+stack<int> edgstack;
+vector<pair<int, int>> edges(0);
+vector<bool> visv(MXN, false), vise(MXM, false);
+
+int rt(int node)
+{
+	if (p[node] == node) return node;
+	p[node] = rt(p[node]);
+	return p[node];
+}
+
+void join(int a, int b)
+{
+	p[rt(b)] = rt(a);
+}
+
+void dfs(int node = 1)
+{
+	visv[node] = true;
+	disc[node] = ++tmr;
+	low[node] = tmr;
+	for (pair<int, int> nxt : adj[node]) if (!vise[nxt.second])
+	{
+		edgstack.push(nxt.second), vise[nxt.second] = true;
+		if (visv[nxt.first]) low[node] = fmin(low[node], disc[nxt.first]);
+		else
+		{
+			dfs(nxt.first);
+			if (low[nxt.first] < disc[node]) low[node] = fmin(low[node], low[nxt.first]);
+			else
+			{
+				set<int> vs;
+				int cnt = 0;
+				while (edgstack.top() != nxt.second)
+				{
+					vs.insert(edges[edgstack.top()].first), vs.insert(edges[edgstack.top()].second);
+					edgstack.pop(), cnt++;
+				}
+
+				vs.insert(edges[nxt.second].first), vs.insert(edges[edgstack.top()].second);
+				edgstack.pop();
+				vector<int> comp(0);
+				for (int element : vs) comp.push_back(element);
+				if (cnt > 0) for (int i = 1; i < comp.size(); i++) join(comp[0], comp[i]);
+			}
+		}
+	}
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	for (int i = 0; i < m; i++)
+	{
+		int a, b;
+		cin >> a >> b;
+		adj[a].push_back({ b, i }), adj[b].push_back({ a, i });
+		edges.push_back({ a, b });
+	}
+
+	for (int i = 1; i <= n; i++) p[i] = i;
+	dfs();
+
+	vector<int> deg(n + 1, 0);
+	for (int i = 0; i < m; i++)
+	{
+		edges[i].first = rt(edges[i].first), edges[i].second = rt(edges[i].second);
+		if (edges[i].first != edges[i].second) deg[edges[i].first]++, deg[edges[i].second]++;
+	}
+
+	int ans = 1;
+	for (int i = 1; i <= n; i++) if (deg[i] == 1) ans++;
+	cout << ans / 2;
+}

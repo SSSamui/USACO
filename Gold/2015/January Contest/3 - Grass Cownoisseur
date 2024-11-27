@@ -1,0 +1,78 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <queue>
+using namespace std;
+
+const int MXN = 1e5 + 1;
+const int NEGINF = -1e9;
+
+vector<vector<int>> adj1(MXN, vector<int>(0)), adj2(MXN, vector<int>(0));
+vector<int> topsort(0), comp(0);
+vector<bool> vis1(MXN, false), vis2(MXN, false);
+
+void dfs1(int node)
+{
+	vis1[node] = true;
+	for (int nxt : adj1[node]) if (!vis1[nxt]) dfs1(nxt);
+	topsort.push_back(node);
+}
+
+void dfs2(int node)
+{
+	vis2[node] = true, comp.push_back(node);
+	for (int nxt : adj2[node]) if (!vis2[nxt]) dfs2(nxt);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	while (m--)
+	{
+		int a, b;
+		cin >> a >> b;
+		adj1[a].push_back(b), adj2[b].push_back(a);
+	}
+
+	vector<int> rt(n + 1), compsz(n + 1, 0);
+	for (int i = 1; i <= n; i++) if (!vis1[i]) dfs1(i);
+	for (int i = n - 1; i > -1; i--) if (!vis2[topsort[i]])
+	{
+		dfs2(topsort[i]);
+		compsz[topsort[i]] = comp.size();
+		for (int node : comp) rt[node] = topsort[i];
+		comp.clear();
+	}
+
+	vector<set<int>> nadj1(n + 1), nadj2(n + 1);
+	for (int i = 1; i <= n; i++) for (int nxt : adj1[i]) if (rt[i] != rt[nxt]) nadj1[rt[i]].insert(rt[nxt]), nadj2[rt[nxt]].insert(rt[i]);
+	vector<int> arr1(n + 1, NEGINF), arr2(n + 1, NEGINF);
+
+	priority_queue<pair<int, int>> djk;
+	djk.push({ -compsz[rt[1]], rt[1] }), arr1[rt[1]] = compsz[rt[1]];
+	while (!djk.empty())
+	{
+		int wgt = -djk.top().first, node = djk.top().second;
+		djk.pop();
+		if (arr1[node] == wgt) for (int nxt : nadj1[node]) if (wgt + compsz[nxt] > arr1[nxt]) djk.push({ -wgt - compsz[nxt], nxt }), arr1[nxt] = wgt + compsz[nxt];
+	}
+
+	djk.push({ -compsz[rt[1]], rt[1] }), arr2[rt[1]] = compsz[rt[1]];
+	while (!djk.empty())
+	{
+		int wgt = -djk.top().first, node = djk.top().second;
+		arr2[node] = wgt, djk.pop();
+		if (arr2[node] == wgt) for (int nxt : nadj2[node]) if (wgt + compsz[nxt] > arr2[nxt]) djk.push({ -wgt - compsz[nxt], nxt }), arr2[nxt] = wgt + compsz[nxt];
+	}
+
+	int ans = 2 * compsz[rt[1]];
+	for (int i = 1; i <= n; i++) for (int nxt : nadj1[i]) ans = fmax(ans, arr1[nxt] + arr2[i]);
+	ans -= compsz[rt[1]];
+	cout << ans;
+}

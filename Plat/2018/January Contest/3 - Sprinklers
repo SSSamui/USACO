@@ -1,0 +1,67 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const ll one = 1;
+const ll MOD = 1e9 + 7;
+
+int main()
+{
+	ifstream fin("sprinklers.in");
+	ofstream fout("sprinklers.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n;
+	vector<int> spr(n), inv(n);
+	for (int i = 0; i < n; i++)
+	{
+		int x, y;
+		fin >> x >> y;
+		spr[x] = y, inv[y] = x;
+	}
+
+	vector<int> lft(n), btm(n), top(n);
+	lft[0] = inv[0], top[0] = spr[0], btm[n - 1] = spr[n - 1];
+	for (int i = 1; i < n; i++) lft[i] = fmin(lft[i - 1], inv[i]), top[i] = fmin(top[i - 1], spr[i]);
+	for (int i = n - 2; i > -1; i--) btm[i] = fmax(btm[i + 1], spr[i]);
+
+	vector<ll> ssum(n, 0), psum(n, 0);
+	ssum[n - 1] = one * lft[n - 1], psum[n - 1] = (one * (n - 1) * lft[n - 1]) % MOD;
+	for (int i = n - 2; i > -1; i--) ssum[i] = (ssum[i + 1] + one * lft[i]) % MOD, psum[i] = (psum[i + 1] + one * i * lft[i]) % MOD;
+
+	ll ans = 0;
+	for (int i = 1; i < n; i++)
+	{
+		ll tadd = one * btm[i] * (btm[i] + 1) / 2;
+		tadd %= MOD;
+		tadd *= i;
+		tadd %= MOD;
+
+		ll sbtract = one * top[i] * btm[i] - one * top[i] * (top[i] - 1) / 2;
+		sbtract %= MOD;
+		if (sbtract < 0) sbtract += MOD;
+		sbtract *= i;
+		sbtract %= MOD;
+
+		sbtract += one * btm[i] * (ssum[top[i]] - ssum[btm[i]]);
+		sbtract %= MOD;
+		sbtract -= one * (psum[top[i]] - psum[btm[i]]);
+		sbtract %= MOD;
+		if (sbtract < 0) sbtract += MOD;
+
+		tadd -= sbtract;
+		if (tadd < 0) tadd += MOD;
+
+		ans += tadd;
+		ans %= MOD;
+	}
+
+	fout << ans;
+}

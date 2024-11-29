@@ -1,0 +1,54 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <queue>
+#include <set>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, k;
+	cin >> n >> k;
+	vector<ll> len(n, 0);
+	for (int i = 0; i < n; i++) cin >> len[i];
+
+	priority_queue<pair<ll, int>> pq;
+	for (int i = 0; i < k; i++) pq.push({ -len[i], i });
+	vector<set<int>> events(0);
+
+	int ind = k, jn = 0;
+	ll tm = 0;
+	while (ind <= n)
+	{
+		tm = -pq.top().first, jn = pq.top().second;
+		set<int> event;
+		while (!pq.empty() && (pq.top().first == -tm))
+		{
+			event.insert(pq.top().second);
+			if (ind < n) pq.push({ -tm - len[ind], pq.top().second });
+			ind++;
+			pq.pop();
+		}
+
+		events.push_back(event);
+	}
+
+	set<int> ans;
+	ans.insert(jn);
+	while (!events.empty())
+	{
+		set<int> bck = events.back();
+		events.pop_back();
+		bool cnt = false;
+		for (int element : bck) if (ans.count(element) == 1) cnt = true;
+		if (cnt) for (int element : bck) ans.insert(element);
+	}
+
+	cout << tm << "\n";
+	for (int i = 0; i < k; i++) cout << ans.count(i);
+}

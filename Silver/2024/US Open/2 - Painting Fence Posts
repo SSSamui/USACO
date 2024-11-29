@@ -1,0 +1,179 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <map>
+#include <set>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int m, n;
+	cin >> m >> n;
+	vector<pair<ll, ll>> posts(n);
+	for (int i = 0; i < n; i++) cin >> posts[i].first >> posts[i].second;
+
+	map<ll, set<pair<ll, int>>> xpost, ypost;
+	for (int i = 0; i < n; i++) xpost[posts[i].first].insert({ posts[i].second, i }), ypost[posts[i].second].insert({ posts[i].first, i });
+
+	vector<vector<int>> adj(n, vector<int>(0));
+	for (auto it : xpost)
+	{
+		auto it1 = it.second.begin();
+		while (it1 != it.second.end())
+		{
+			int a = (*it1).second;
+			it1++;
+			int b = (*it1).second;
+			it1++;
+			adj[a].push_back(b), adj[b].push_back(a);
+		}
+	}
+
+	for (auto it : ypost)
+	{
+		auto it1 = it.second.begin();
+		while (it1 != it.second.end())
+		{
+			int a = (*it1).second;
+			it1++;
+			int b = (*it1).second;
+			it1++;
+			adj[a].push_back(b), adj[b].push_back(a);
+		}
+	}
+
+	vector<pair<pair<ll, ll>, pair<ll, ll>>> edges(0);
+	vector<int> inv(1, 0);
+	int cur = 0, lst = 0;
+	for (int i = 0; i < n; i++)
+	{
+		if (lst != adj[cur][0])
+		{
+			lst = cur;
+			cur = adj[cur][0];
+		}
+
+		else
+		{
+			lst = cur;
+			cur = adj[cur][1];
+		}
+
+		inv.push_back(cur), edges.push_back({ posts[lst], posts[cur] });
+	}
+
+	vector<ll> psum(n);
+	map<ll, set<pair<pair<ll, ll>, int>>> xedg, yedg;
+	for (int i = 0; i < n; i++)
+	{
+		psum[i] = (edges[i].first.first - edges[i].second.first) + (edges[i].first.second - edges[i].second.second);
+		if (psum[i] < 0) psum[i] = -psum[i];
+	}
+
+	
+	for (int i = 1; i < n; i++) psum[i] += psum[i - 1];
+	ll comp = psum.back();
+	comp /= 2;
+
+	for (int i = 0; i < n; i++)
+	{
+		if (edges[i].first.first == edges[i].second.first)
+		{
+			ll a = edges[i].first.second, b = edges[i].second.second;
+			if (a > b) swap(a, b);
+			xedg[edges[i].first.first].insert({ {a, b}, i });
+		}
+
+		else
+		{
+			ll a = edges[i].first.first, b = edges[i].second.first;
+			if (a > b) swap(a, b);
+			yedg[edges[i].first.second].insert({ {a, b}, i });
+		}
+	}
+
+	vector<int> diffarr(n + 2, 0);
+	while (m--)
+	{
+		ll x1, y1, x2, y2;
+		cin >> x1 >> y1 >> x2 >> y2;
+
+		int edg1 = 0, edg2 = 0;
+		auto ysat = true;
+		auto it = xedg[x1].lower_bound({ {y1 + 1, 0}, 0 });
+		if (it != xedg[x1].begin())
+		{
+			it--;
+			if ((*it).first.second >= y1) edg1 = (*it).second, ysat = false;
+		}
+
+		if (ysat)
+		{
+			it = yedg[y1].lower_bound({ {x1 + 1, 0}, 0 });
+			it--;
+			edg1 = (*it).second;
+		}
+
+		ysat = true;
+		it = xedg[x2].lower_bound({ {y2 + 1, 0}, 0 });
+		if (it != xedg[x2].begin())
+		{
+			it--;
+			if ((*it).first.second >= y2) edg2 = (*it).second, ysat = false;
+		}
+
+		if (ysat)
+		{
+			it = yedg[y2].lower_bound({ {x2 + 1, 0}, 0 });
+			it--;
+			edg2 = (*it).second;
+		}
+
+		if (edg1 == edg2)
+		{
+			if ((edges[edg1].first == make_pair(x1, y1)) || (edges[edg1].first == make_pair(x2, y2))) diffarr[edg1]++, diffarr[edg1 + 1]--;
+			if ((edges[edg1].second == make_pair(x1, y1)) || (edges[edg1].second == make_pair(x2, y2))) diffarr[edg1 + 1]++, diffarr[edg1 + 2]--;
+		}
+
+		else
+		{
+			if (edg1 > edg2) swap(edg1, edg2), swap(x1, x2), swap(y1, y2);
+			ll dst = psum[edg2 - 1] - psum[edg1];
+			
+			ll add = (edges[edg1].second.first - x1) + (edges[edg1].second.second - y1);
+			if (add < 0) add = -add;
+			dst += add;
+
+			add = (edges[edg2].first.first - x2) + (edges[edg2].first.second - y2);
+			if (add < 0) add = -add;
+			dst += add;
+
+			if (dst < comp)
+			{
+				if (edges[edg1].first == make_pair(x1, y1)) edg1--;
+				diffarr[edg1 + 1]++;
+				if (edges[edg2].second == make_pair(x2, y2)) edg2++;
+				diffarr[edg2 + 1]--;
+			}
+
+			else
+			{
+				if (edges[edg1].second == make_pair(x1, y1)) edg1++;
+				diffarr[0]++, diffarr[edg1 + 1]--;
+				if (edges[edg2].first == make_pair(x2, y2)) edg2--;
+				diffarr[edg2 + 1]++, diffarr[n]--;
+			}
+		}
+	}
+
+	for (int i = 1; i <= n; i++) diffarr[i] += diffarr[i - 1];
+	vector<int> ans(n);
+	for (int i = 0; i <= n; i++) ans[inv[i]] += diffarr[i];
+	for (int i = 0; i < n; i++) cout << ans[i] << "\n";
+}

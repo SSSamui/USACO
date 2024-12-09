@@ -1,0 +1,92 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	ll c;
+	int m;
+	cin >> c >> m;
+	vector<pair<ll, ll>> cv(m);
+	for (int i = 0; i < m; i++) cin >> cv[i].first >> cv[i].second;
+
+	sort(cv.begin(), cv.end());
+	vector<pair<ll, ll>> cv1(0);
+	for (int i = 1; i < m; i++) if (cv[i].first > cv[i - 1].first) cv1.push_back(cv[i - 1]);
+	cv1.push_back(cv[m - 1]);
+	m = cv1.size(), cv = cv1;
+	cv1.clear();
+	for (int i = 0; i < m; i++) cv[i].second += cv[i].first;
+	cv1.push_back(cv[0]);
+	for (int i = 1; i < m; i++) if (cv[i].second > cv1.back().second) cv1.push_back(cv[i]);
+	m = cv1.size(), cv = cv1;
+	cv1.clear();
+	for (int i = 0; i < m; i++) if (cv[i].second < c) cv[i].first += c, cv[i].second += c;
+	sort(cv.begin(), cv.end());
+	cv1.push_back(cv[0]);
+	for (int i = 1; i < m; i++) if (cv[i].second > cv1.back().second) cv1.push_back(cv[i]);
+	m = cv1.size(), cv = cv1;
+	cv1.clear();
+	for (int i = 0; i < m; i++) if (cv[i].first >= c) cv[i].first -= c, cv[i].second -= c;
+	sort(cv.begin(), cv.end());
+
+	vector<vector<pair<ll, int>>> blft(m, vector<pair<ll, int>>(17, { 0, 0 }));
+	for (int i = 0; i < m; i++)
+	{
+		ll rend = cv[i].second;
+		bool cont = true;
+		if (rend >= cv[m - 1].first)
+		{
+			blft[i][0].first = cv[m - 1].second - rend, blft[i][0].second = m - 1;
+			if (rend < c + cv[0].first) cont = false;
+			else rend -= c;
+		}
+
+		if (cont)
+		{
+			int l = 0, r = m - 1;
+			while (l < r)
+			{
+				int mid = l + (r - l + 1) / 2;
+				if (cv[mid].first > rend) r = mid - 1;
+				else l = mid;
+			}
+
+			blft[i][0].first = cv[l].second - rend, blft[i][0].second = l;
+		}
+	}
+
+	for (int i = 0; i < m; i++) cv[i].second -= cv[i].first;
+	for (int j = 0; j < 16; j++) for (int i = 0; i < m; i++) blft[i][j + 1].first = blft[i][j].first + blft[blft[i][j].second][j].first,
+		blft[i][j + 1].second = blft[blft[i][j].second][j].second;
+
+	int ans = m;
+	for (int i = 0; i < m; i++)
+	{
+		int l = 1, r = m - 1;
+		while (l < r)
+		{
+			int mid = l + (r - l) / 2, ind = i;
+			ll cnt = cv[i].second;
+			for (int j = 0; j < 17; j++) if (mid & (1 << j))
+			{
+				cnt += blft[ind][j].first;
+				ind = blft[ind][j].second;
+			}
+
+			if (cnt < c) l = mid + 1;
+			else r = mid;
+		}
+
+		ans = fmin(ans, l + 1);
+	}
+
+	cout << ans;
+}

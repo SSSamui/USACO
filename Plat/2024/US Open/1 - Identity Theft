@@ -1,0 +1,99 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <queue>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+const ll one = 1;
+const ll two = 2;
+
+enum status {T, S, N};
+
+class trie
+{
+public:
+	int depth, tasg;
+	trie* chd[2];
+	status use;
+
+	trie(int dpt)
+	{
+		depth = dpt, tasg = 0, use = T;
+		chd[0] = nullptr, chd[1] = nullptr;
+	}
+
+	trie* get(int bit)
+	{
+		if (chd[bit] == nullptr) chd[bit] = new trie(depth + 1);
+		return chd[bit];
+	}
+};
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	trie root(0);
+
+	int n;
+	cin >> n;
+	vector<trie*> tins(0);
+	while (n--)
+	{
+		string s;
+		cin >> s;
+
+		trie* cur = &root;
+		for (char bit : s)
+		{
+			int dir = bit - '0';
+			cur->use = N;
+			cur = cur->get(dir);
+		}
+
+		if (cur->tasg == 0) tins.push_back(cur);
+		cur->tasg++;
+	}
+
+	sort(tins.begin(), tins.end(), [](trie* a, trie* b) {return (a->depth > b->depth);});
+
+	ll ans = 0;
+	for (trie* tprc : tins)
+	{
+		queue<trie*> tnnodes, snodes;
+		tnnodes.push(tprc);
+		while (tprc->tasg > 0)
+		{
+			if (!snodes.empty() && (tnnodes.empty() || (snodes.front()->depth + 1 < tnnodes.front()->depth)))
+			{
+				ans += one * (snodes.front()->depth - tprc->depth);
+				ans += two, tprc->tasg--;
+				snodes.front()->use = N;
+				snodes.front()->get(0)->use = S, snodes.front()->get(1)->use = S;
+				snodes.push(snodes.front()->get(0)), snodes.push(snodes.front()->get(1));
+				snodes.pop();
+			}
+
+			else
+			{
+				if (tnnodes.front()->use == T)
+				{
+					ans += one * (tnnodes.front()->depth - tprc->depth);
+					tprc->tasg--;
+					tnnodes.front()->use = S;
+				}
+
+				if (tnnodes.front()->use == S) snodes.push(tnnodes.front());
+				else tnnodes.push(tnnodes.front()->get(0)), tnnodes.push(tnnodes.front()->get(1));
+				tnnodes.pop();
+			}
+		}
+	}
+
+	cout << ans;
+}

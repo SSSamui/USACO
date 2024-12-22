@@ -1,0 +1,60 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+
+const int MXN = 5e4 + 1;
+
+vector<pair<int, int>> edg(MXN);
+vector<vector<pair<int, int>>> adj(MXN, vector<pair<int, int>>(0));
+vector<set<int>> val(MXN);
+vector<int> ans(MXN, -1);
+vector<vector<int>> nedg(MXN, vector<int>(0));
+vector<pair<int, pair<int, int>>> extraedg(MXN);
+
+void dfs(int node = 1, int p = 0)
+{
+	for (pair<int, int> nxt : adj[node]) if (nxt.first != p)
+	{
+		if (edg[nxt.second].first != node) swap(edg[nxt.second].first, edg[nxt.second].second);
+		dfs(nxt.first, node);
+		if (val[nxt.first].size() > val[node].size()) swap(val[nxt.first], val[node]);
+		for (int tins : val[nxt.first])
+		{
+			if (val[node].count(tins) == 1) val[node].erase(tins);
+			else val[node].insert(tins);
+		}
+	}
+
+	for (int tins : nedg[node])
+	{
+		if (val[node].count(tins) == 1) val[node].erase(tins);
+		else val[node].insert(tins);
+	}
+
+	if (!val[node].empty()) ans[node] = extraedg[*val[node].begin()].first;
+}
+
+int main()
+{
+	ifstream fin("disrupt.in");
+	ofstream fout("disrupt.out");
+
+	int n, m;
+	fin >> n >> m;
+	for (int i = 1; i < n; i++)
+	{
+		fin >> edg[i].first >> edg[i].second;
+		adj[edg[i].first].push_back({ edg[i].second, i }), adj[edg[i].second].push_back({ edg[i].first, i });
+	}
+
+	for (int i = 0; i < m; i++) fin >> extraedg[i].second.first >> extraedg[i].second.second >> extraedg[i].first;
+	sort(extraedg.begin(), extraedg.begin() + m);
+	for (int i = 0; i < m; i++) nedg[extraedg[i].second.first].push_back(i), nedg[extraedg[i].second.second].push_back(i);
+	dfs();
+	for (int i = 1; i < n; i++) fout << ans[edg[i].second] << "\n";
+}

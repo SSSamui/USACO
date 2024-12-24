@@ -1,0 +1,62 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <deque>
+#include <set>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ifstream fin("bookshelf.in");
+	ofstream fout("bookshelf.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	ll len;
+	fin >> n >> len;
+	vector<ll> h(n + 1), psums(n + 1, 0);
+	for (int i = 1; i <= n; i++) fin >> h[i] >> psums[i];
+	for (int i = 1; i < n; i++) psums[i + 1] += psums[i];
+
+	vector<ll> ans(n + 1, 0);
+	deque<pair<int, ll>> deq;
+	multiset<ll> poss;
+	for (int i = 1; i <= n; i++)
+	{
+		int l = 0, r = i - 1;
+		while (l < r)
+		{
+			int mid = l + (r - l) / 2;
+			if (psums[i] - psums[mid] > len) l = mid + 1;
+			else r = mid;
+		}
+
+		while (!deq.empty() && (deq.front().first <= l))
+		{
+			int find = deq.front().first;
+			deq.pop_front();
+			if (!deq.empty()) poss.erase(poss.find(ans[find] + deq.front().second));
+		}
+
+		while (!deq.empty() && (deq.back().second <= h[i]))
+		{
+			ll lmax = deq.back().second;
+			deq.pop_back();
+			if (!deq.empty()) poss.erase(poss.find(ans[deq.back().first] + lmax));
+		}
+
+		if (!deq.empty()) poss.insert(ans[deq.back().first] + h[i]);
+		deq.push_back({ i, h[i] });
+
+		ans[i] = ans[l] + deq.front().second;
+		if (!poss.empty()) ans[i] = fmin(ans[i], *poss.begin());
+	}
+
+	fout << ans[n];
+}

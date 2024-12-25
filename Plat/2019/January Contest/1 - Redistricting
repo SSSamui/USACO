@@ -1,0 +1,47 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <map>
+#include <set>
+using namespace std;
+
+int main()
+{
+	ifstream fin("redistricting.in");
+	ofstream fout("redistricting.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, k;
+	fin >> n >> k;
+	string s;
+	fin >> s;
+	vector<int> psums(n + 1, 0);
+	for (int i = 0; i < n; i++)
+	{
+		psums[i + 1] = psums[i];
+		if (s[i] == 'H') psums[i + 1]++;
+		else psums[i + 1]--;
+	}
+
+	vector<int> dp(n + 1, 0);
+	map<int, multiset<int>> inv;
+	inv[0].insert(0);
+	for (int i = 1; i <= n; i++)
+	{
+		dp[i] = (*inv.begin()).first;
+		if (*((*inv.begin()).second).begin() >= psums[i]) dp[i]++;
+		inv[dp[i]].insert(psums[i]);
+		if (i >= k)
+		{
+			inv[dp[i - k]].erase(inv[dp[i - k]].find(psums[i - k]));
+			if (inv[dp[i - k]].size() == 0) inv.erase(dp[i - k]);
+		}
+	}
+
+	fout << dp[n];
+}

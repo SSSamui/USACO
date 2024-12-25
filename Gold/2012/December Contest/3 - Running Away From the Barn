@@ -25,6 +25,7 @@ void dfs(int node = 1)
 		dfs(nxt.first);
 		if (depset[node].size() < depset[nxt.first].size()) swap(depset[node], depset[nxt.first]);
 		for (ll toins : depset[nxt.first]) depset[node].insert(toins);
+		depset[nxt.first].clear();
 	}
 
 	while (true)

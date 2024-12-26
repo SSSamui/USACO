@@ -1,0 +1,159 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <set>
+#include <map>
+using namespace std;
+using ll = long long;
+
+const int sz = 1 << 18;
+const ll one = 1;
+const ll two = 2;
+ll NEGINF = -1e18;
+
+int main()
+{
+	ifstream fin("slingshot.in");
+	ofstream fout("slingshot.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, m;
+	fin >> n >> m;
+	vector<pair<pair<int, int>, int>> upd[2];
+	while (n--)
+	{
+		int a, b, c;
+		fin >> a >> b >> c;
+		if (fmin(a, b) + c < fmax(a, b))
+		{
+			if (a < b) upd[0].push_back({ {a, b}, c });
+			else upd[1].push_back({ {b, a}, c });
+		}
+	}
+
+	vector<pair<pair<int, int>, int>> qur[2];
+	for (int i = 0; i < m; i++)
+	{
+		int a, b;
+		fin >> a >> b;
+		if (a < b) qur[0].push_back({ {a, b}, i });
+		else qur[1].push_back({ {b, a}, i });
+	}
+
+	vector<ll> ans(m, 0);
+	for (int i = 0; i < 2; i++)
+	{
+		sort(upd[i].begin(), upd[i].end()), sort(qur[i].begin(), qur[i].end());
+		int j = 0, k = 0;
+
+		set<int> rset;
+		for (; j < upd[i].size(); j++) rset.insert(upd[i][j].first.second);
+		for (; k < qur[i].size(); k++) rset.insert(qur[i][k].first.second);
+		vector<int> lst(0);
+		for (int r : rset) lst.push_back(r);
+		map<int, int> inv;
+		for (int ind = 0; ind < lst.size(); ind++) inv[lst[ind]] = ind;
+		for (j = 0; j < upd[i].size(); j++) upd[i][j].first.second = inv[upd[i][j].first.second];
+		for (k = 0; k < qur[i].size(); k++) qur[i][k].first.second = inv[qur[i][k].first.second];
+
+		vector<vector<ll>> tree1(2, vector<ll>(2 * sz, NEGINF));
+		j = 0, k = 0;
+		while (k < qur[i].size())
+		{
+			while ((j < upd[i].size()) && (upd[i][j].first.first <= qur[i][k].first.first))
+			{
+				int ind = upd[i][j].first.second;
+				ind += sz;
+				while (ind > 0)
+				{
+					tree1[0][ind] = fmax(tree1[0][ind],
+						one * upd[i][j].first.first + one * lst[upd[i][j].first.second] - one * upd[i][j].second),
+						tree1[1][ind] = fmax(tree1[1][ind],
+							one * upd[i][j].first.first - one * lst[upd[i][j].first.second] - one * upd[i][j].second);
+					ind /= 2;
+				}
+
+				j++;
+			}
+
+			ll upd0 = NEGINF;
+			int l = 0, r = qur[i][k].first.second;
+			l += sz, r += sz;
+			while (l <= r)
+			{
+				if (l % 2 == 1) upd0 = fmax(upd0, tree1[0][l++]);
+				if (r % 2 == 0) upd0 = fmax(upd0, tree1[0][r--]);
+				l /= 2, r /= 2;
+			}
+
+			ans[qur[i][k].second] = fmax(ans[qur[i][k].second], upd0 - two * qur[i][k].first.first);
+			upd0 = NEGINF;
+			l = qur[i][k].first.second, r = sz - 1;
+			l += sz, r += sz;
+			while (l <= r)
+			{
+				if (l % 2 == 1) upd0 = fmax(upd0, tree1[1][l++]);
+				if (r % 2 == 0) upd0 = fmax(upd0, tree1[1][r--]);
+				l /= 2, r /= 2;
+			}
+
+			ans[qur[i][k].second] = fmax(ans[qur[i][k].second], upd0 - two * qur[i][k].first.first + two * lst[qur[i][k].first.second]);
+			k++;
+		}
+
+		vector<vector<ll>> tree2(2, vector<ll>(2 * sz, NEGINF));
+		j = upd[i].size() - 1, k = qur[i].size() - 1;
+		while (k > -1)
+		{
+			while ((j > -1) && (upd[i][j].first.first >= qur[i][k].first.first))
+			{
+				int ind = upd[i][j].first.second;
+				ind += sz;
+				while (ind > 0)
+				{
+					tree2[0][ind] = fmax(tree2[0][ind],
+						one * lst[upd[i][j].first.second] - one * upd[i][j].first.first - one * upd[i][j].second),
+						tree2[1][ind] = fmax(tree2[1][ind],
+							-one * upd[i][j].first.first - one * lst[upd[i][j].first.second] - one * upd[i][j].second);
+					ind /= 2;
+				}
+
+				j--;
+			}
+
+			ll upd0 = NEGINF;
+			int l = 0, r = qur[i][k].first.second;
+			l += sz, r += sz;
+			while (l <= r)
+			{
+				if (l % 2 == 1) upd0 = fmax(upd0, tree2[0][l++]);
+				if (r % 2 == 0) upd0 = fmax(upd0, tree2[0][r--]);
+				l /= 2, r /= 2;
+			}
+
+			ans[qur[i][k].second] = fmax(ans[qur[i][k].second], upd0);
+			upd0 = NEGINF;
+			l = qur[i][k].first.second, r = sz - 1;
+			l += sz, r += sz;
+			while (l <= r)
+			{
+				if (l % 2 == 1) upd0 = fmax(upd0, tree2[1][l++]);
+				if (r % 2 == 0) upd0 = fmax(upd0, tree2[1][r--]);
+				l /= 2, r /= 2;
+			}
+
+			ans[qur[i][k].second] = fmax(ans[qur[i][k].second], upd0 + two * lst[qur[i][k].first.second]);
+			k--;
+		}
+
+		for (k = 0; k < qur[i].size(); k++) ans[qur[i][k].second] =
+			one * lst[qur[i][k].first.second] - one * qur[i][k].first.first - ans[qur[i][k].second];
+	}
+
+	for (int i = 0; i < m; i++) fout << ans[i] << "\n";
+}

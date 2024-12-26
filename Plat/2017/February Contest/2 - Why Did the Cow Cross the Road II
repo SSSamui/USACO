@@ -1,0 +1,47 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+
+int main()
+{
+	ifstream fin("nocross.in");
+	ofstream fout("nocross.out");
+
+	int n;
+	fin >> n;
+	vector<int> prcord(n);
+	for (int i = 0; i < n; i++)
+	{
+		fin >> prcord[i];
+		prcord[i]--;
+	}
+
+	vector<int> inv(n);
+	for (int i = 0; i < n; i++)
+	{
+		int a;
+		fin >> a;
+		inv[a - 1] = i;
+	}
+
+	set<int> dp;
+	for (int i = 0; i < n; i++)
+	{
+		vector<int> conn(0);
+		for (int j = fmax(0, prcord[i] - 4); j < fmin(n, prcord[i] + 5); j++) conn.push_back(inv[j]);
+		sort(conn.begin(), conn.end());
+		for (int j = conn.size() - 1; j > -1; j--)
+		{
+			auto it = dp.lower_bound(conn[j]);
+			if (it != dp.end()) dp.erase(it);
+			dp.insert(conn[j]);
+		}
+	}
+
+	fout << dp.size();
+}

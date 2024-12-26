@@ -1,0 +1,94 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+struct node
+{
+	int val, lz;
+};
+
+const int sz = 1 << 17;
+
+vector<node> tree(2 * sz);
+
+void pushup(int p)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	tree[p].val = fmin(tree[lc].val, tree[rc].val);
+}
+
+void pushdown(int p)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	tree[lc].val += tree[p].lz, tree[lc].lz += tree[p].lz;
+	tree[rc].val += tree[p].lz, tree[rc].lz += tree[p].lz;
+	tree[p].lz = 0;
+}
+
+void build(int p, int l, int r)
+{
+	tree[p].lz = 0;
+	if (l == r)
+	{
+		tree[p].val = -l;
+		return;
+	}
+
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	build(lc, l, mid), build(rc, mid + 1, r);
+	pushup(p);
+}
+
+void upd(int p, int l, int r, int a, int b)
+{
+	if ((r < a) || (b < l)) return;
+	if ((a <= l) && (r <= b))
+	{
+		tree[p].lz++, tree[p].val++;
+		return;
+	}
+
+	pushdown(p);
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	upd(lc, l, mid, a, b), upd(rc, mid + 1, r, a, b);
+	pushup(p);
+}
+
+int rq(int p, int l, int r, int a, int b)
+{
+	if ((r < a) || (b < l)) return 1e9;
+	if ((a <= l) && (r <= b)) return tree[p].val;
+	pushdown(p);
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	return fmin(rq(lc, l, mid, a, b), rq(rc, mid + 1, r, a, b));
+}
+
+int main()
+{
+	ifstream fin("greedy.in");
+	ofstream fout("greedy.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n;
+	build(1, 0, n - 1);
+	vector<int> cut(n);
+	for (int i = 0; i < n; i++) fin >> cut[i];
+
+	int ans = 0;
+	for (int i = 1; i < n; i++)
+	{
+		upd(1, 0, n - 1, cut[i - 1], n - 1);
+		if (rq(1, 0, n - 1, n - i - 1, n - 2) < i + 2 - n) ans++;
+	}
+
+	fout << ans;
+}

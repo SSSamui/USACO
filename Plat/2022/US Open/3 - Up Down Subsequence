@@ -1,0 +1,56 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+const int sz = 1 << 19;
+
+vector<int> tree(2 * sz, -1);
+
+void upd(int node, int tupd)
+{
+	node += sz;
+	while (node > 0)
+	{
+		tree[node] = fmax(tree[node], tupd);
+		node /= 2;
+	}
+}
+
+int rq(int l, int r)
+{
+	l += sz, r += sz;
+	int ans = -1;
+	while (l <= r)
+	{
+		if (l % 2 == 1) ans = fmax(ans, tree[l++]);
+		if (r % 2 == 0) ans = fmax(ans, tree[r--]);
+		l /= 2, r /= 2;
+	}
+
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	vector<int> a(n);
+	for (int i = 0; i < n; i++) cin >> a[i];
+	vector<vector<int>> lst(2, vector<int>(n, 0));
+	for (int i = 1; i < n; i++)
+	{
+		lst[0][i] = lst[0][i - 1], lst[1][i] = lst[1][i - 1];
+		char a;
+		cin >> a;
+		if (a == 'U') lst[0][i] = i;
+		else lst[1][i] = i;
+	}
+
+	for (int i = 0; i < n; i++) upd(a[i], fmax(lst[0][1 + rq(0, a[i] - 1)], lst[1][1 + rq(a[i] + 1, sz - 1)]));
+	cout << tree[1];
+}

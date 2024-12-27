@@ -1,0 +1,63 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+const int NEGINF = -1e9;
+
+int main()
+{
+	ifstream fin("lifeguards.in");
+	ofstream fout("lifeguards.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, K;
+	fin >> n >> K;
+	vector<pair<int, int>> inv1(n);
+	for (int i = 0; i < n; i++) fin >> inv1[i].first >> inv1[i].second;
+	sort(inv1.begin(), inv1.end());
+
+	vector<pair<int, int>> inv(1, inv1[0]);
+	for (int i = 1; i < n; i++)
+	{
+		if (inv1[i].second > inv.back().second) inv.push_back(inv1[i]);
+		else K--;
+	}
+
+	K = fmax(K, 0), n = inv.size();
+	vector<vector<int>> dp(n + 1, vector<int>(K + 1, NEGINF));
+	dp[0][0] = 0;
+	for (int b = 0; b < n; b++)
+	{
+		if ((b == 0) || (inv[b].first > inv[b - 1].second)) for (int k = 0; k <= fmin(K, b + 1); k++)
+		{
+			dp[b + 1][k] = dp[b][k] + inv[b].second - inv[b].first;
+			if (k > 0) dp[b + 1][k] = fmax(dp[b + 1][k], dp[b][k - 1]);
+		}
+
+		else
+		{
+			int l = 0, r = b - 1;
+			while (l < r)
+			{
+				int mid = l + (r - l) / 2;
+				if (inv[mid].second < inv[b].first) l = mid + 1;
+				else r = mid;
+			}
+
+			for (int k = 0; k <= fmin(K, b + 1); k++)
+			{
+				dp[b + 1][k] = fmax(dp[l + 1][fmax(0, k - (b - l - 1))] + inv[b].second - inv[l].second,
+					dp[l][fmax(0, k - (b - l))] + inv[b].second - inv[b].first);
+				if (k > 0) dp[b + 1][k] = fmax(dp[b + 1][k], dp[b][k - 1]);
+			}
+		}
+	}
+
+	fout << dp[n][K];
+}

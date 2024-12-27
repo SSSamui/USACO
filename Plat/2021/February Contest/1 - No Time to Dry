@@ -1,0 +1,104 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+const int sz = 1 << 18;
+
+vector<int> tree1(2 * sz, sz);
+vector<int> tree2(2 * sz, 0);
+
+void upd1(int node, int col)
+{
+	node += sz;
+	while (node > 0)
+	{
+		tree1[node] = fmin(tree1[node], col);
+		node /= 2;
+	}
+}
+
+int rq1(int l, int r)
+{
+	l += sz, r += sz;
+	int ans = sz;
+	while (l <= r)
+	{
+		if (l % 2 == 1) ans = fmin(ans, tree1[l++]);
+		if (r % 2 == 0) ans = fmin(ans, tree1[r--]);
+		l /= 2, r /= 2;
+	}
+
+	return ans;
+}
+
+void upd2(int node, int tadd)
+{
+	node += sz;
+	while (node > 0)
+	{
+		tree2[node] += tadd;
+		node /= 2;
+	}
+}
+
+int rq2(int l, int r)
+{
+	l += sz, r += sz;
+	int ans = 0;
+	while (l <= r)
+	{
+		if (l % 2 == 1) ans += tree2[l++];
+		if (r % 2 == 0) ans += tree2[r--];
+		l /= 2, r /= 2;
+	}
+
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, q;
+	cin >> n >> q;
+	vector<vector<int>> inv(n + 1, vector<int>(0));
+	for (int i = 1; i <= n; i++)
+	{
+		int col;
+		cin >> col;
+		upd1(i, col), inv[col].push_back(i);
+	}
+
+	vector<int> lst(n + 1, 0);
+	for (int i = 1; i <= n; i++) for (int j = 1; j < inv[i].size(); j++) if (rq1(inv[i][j - 1] + 1, inv[i][j] - 1) >= i)
+		lst[inv[i][j]] = inv[i][j - 1];
+
+	vector<pair<pair<int, int>, int>> qur(0);
+	for (int i = 0; i < q; i++)
+	{
+		int a, b;
+		cin >> a >> b;
+		qur.push_back({ {b, a}, i });
+	}
+
+	sort(qur.begin(), qur.end());
+	vector<int> ans(q);
+	
+	int ind = 1;
+	for (int i = 0; i < q; i++)
+	{
+		while (ind <= qur[i].first.first)
+		{
+			upd2(lst[ind], -1), upd2(ind, 1);
+			ind++;
+		}
+
+		ans[qur[i].second] = rq2(qur[i].first.second, qur[i].first.first);
+	}
+
+	for (int i = 0; i < q; i++) cout << ans[i] << "\n";
+}

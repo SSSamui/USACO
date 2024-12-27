@@ -1,0 +1,89 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <map>
+using namespace std;
+using ll = long long;
+
+const int sz = 1 << 17;
+const ll one = 1;
+
+vector<ll> tree(2 * sz, 0);
+
+void upd(int node, int tadd)
+{
+	node += sz;
+	while (node > 0)
+	{
+		tree[node] += one * tadd;
+		node /= 2;
+	}
+}
+
+ll rq(int l, int r)
+{
+	l += sz, r += sz;
+	ll ans = 0;
+	while (l <= r)
+	{
+		if (l % 2 == 1) ans += tree[l++];
+		if (r % 2 == 0) ans += tree[r--];
+		l /= 2, r /= 2;
+	}
+
+	return ans;
+}
+
+int main()
+{
+	ifstream fin("sort.in");
+	ofstream fout("sort.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n;
+	vector<int> a(n);
+	for (int i = 0; i < n; i++) fin >> a[i];
+
+	vector<pair<int, int>> chk(0);
+	for (int i = 0; i < n; i++) chk.push_back({ a[i], i });
+	sort(chk.begin(), chk.end());
+
+	map<pair<int, int>, int> inv;
+	for (int i = 0; i < n; i++) inv[chk[i]] = i;
+	for (int i = 0; i < n; i++) a[i] = inv[{a[i], i}];
+
+	vector<int> ninv(n);
+	for (int i = 0; i < n; i++) ninv[a[i]] = i;
+	for (int i = 1; i < n; i++) ninv[i] = fmax(ninv[i], ninv[i - 1]);
+	vector<int> diff(1, 0);
+	for (int i = 0; i < n; i++) diff.push_back(ninv[i] - i);
+	for (int i = 1; i < n; i++) diff[i] = fmax(diff[i], 1);
+
+	vector<vector<int>> invind(n, vector<int>(0));
+	for (int i = 0; i <= n; i++) invind[diff[i]].push_back(i);
+	for (int i = 0; i < n; i++) invind[i].push_back(0);
+	vector<int> ind(n, 0);
+
+	ll ans = 0;
+	for (int i = 0; i < n; i++) upd(i, invind[i][0]);
+	for (int i = 0; i < n; i++)
+	{
+		upd(diff[i], invind[diff[i]][ind[diff[i]] + 1] - i);
+		ind[diff[i]]++;
+		if (diff[i] < diff[i + 1])
+		{
+			ans += rq(diff[i], diff[i + 1] - 1);
+			ll tdiff = one * (diff[i + 1] - diff[i]);
+			tdiff *= i;
+			ans -= tdiff;
+		}
+	}
+
+	fout << ans;
+}

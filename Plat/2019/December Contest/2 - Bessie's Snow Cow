@@ -1,0 +1,142 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+struct node
+{
+	ll val, lz;
+};
+
+const int sz = 1 << 17;
+const int MXN = 1e5 + 1;
+
+vector<node> tree(2 * sz);
+vector<vector<int>> adj(MXN, vector<int>(0));
+vector<pair<int, int>> inv(MXN);
+int tme = -1;
+
+void dfs(int node = 1, int p = 0)
+{
+	inv[node].first = ++tme;
+	for (int nxt : adj[node]) if (nxt != p) dfs(nxt, node);
+	inv[node].second = tme;
+}
+
+void pushup(int p)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	tree[p].val = tree[lc].val + tree[rc].val;
+}
+
+void pushdown(int p, int l, int mid, int r)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	int lnum = mid - l + 1, rnum = r - mid;
+	ll ladd = tree[p].lz * lnum, radd = tree[p].lz * rnum;
+	tree[lc].val += ladd, tree[rc].val += radd;
+	tree[lc].lz += tree[p].lz, tree[rc].lz += tree[p].lz;
+	tree[p].lz = 0;
+}
+
+void build(int p, int l, int r)
+{
+	tree[p].val = 0, tree[p].lz = 0;
+	if (l == r) return;
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	build(lc, l, mid), build(rc, mid + 1, r);
+}
+
+void upd(int p, int l, int r, int a, int b, ll tadd)
+{
+	if ((b < l) || (r < a)) return;
+	if ((a <= l) && (r <= b))
+	{
+		tree[p].lz += tadd;
+		int num = r - l + 1;
+		tadd *= num;
+		tree[p].val += tadd;
+		return;
+	}
+
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	pushdown(p, l, mid, r);
+	upd(lc, l, mid, a, b, tadd), upd(rc, mid + 1, r, a, b, tadd);
+	pushup(p);
+}
+
+ll rq(int p, int l, int r, int a, int b)
+{
+	if ((b < l) || (r < a)) return 0;
+	if ((a <= l) && (r <= b)) return tree[p].val;
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	pushdown(p, l, mid, r);
+	return rq(lc, l, mid, a, b) + rq(rc, mid + 1, r, a, b);
+}
+
+int main()
+{
+	ifstream fin("snowcow.in");
+	ofstream fout("snowcow.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n, _;
+	fin >> n >> _;
+	build(1, 0, n - 1);
+	for (int i = 1; i < n; i++)
+	{
+		int a, b;
+		fin >> a >> b;
+		adj[a].push_back(b), adj[b].push_back(a);
+	}
+
+	dfs();
+	vector<set<pair<int, int>>> rng(MXN);
+	while (_--)
+	{
+		int q;
+		fin >> q;
+		if (q == 1)
+		{
+			int x, c;
+			fin >> x >> c;
+
+			auto it = rng[c].lower_bound({ inv[x].first, 0 });
+			while ((it != rng[c].end()) && ((*it).second <= inv[x].second))
+			{
+				upd(1, 0, n - 1, (*it).first, (*it).second, -1);
+				rng[c].erase(it);
+				it = rng[c].lower_bound({ inv[x].first, 0 });
+			}
+
+			if (it == rng[c].end() || ((*it).first > inv[x].first))
+			{
+				bool add = true;
+				if (it != rng[c].begin())
+				{
+					it--;
+					if ((*it).second >= inv[x].second) add = false;
+				}
+
+				if (add) rng[c].insert(inv[x]), upd(1, 0, n - 1, inv[x].first, inv[x].second, 1);
+			}
+		}
+
+		else
+		{
+			int x;
+			fin >> x;
+			fout << rq(1, 0, n - 1, inv[x].first, inv[x].second) << "\n";
+		}
+	}
+}

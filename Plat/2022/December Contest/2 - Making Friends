@@ -1,0 +1,62 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+const int MXN = 2e5 + 1;
+const ll one = 1;
+
+vector<int> p(MXN);
+
+int rt(int node)
+{
+	if (p[node] == node) return node;
+	p[node] = rt(p[node]);
+	return p[node];
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, _;
+	cin >> n >> _;
+	for (int i = 1; i <= n; i++) p[i] = i;
+	vector<set<int>> adj(n + 1);
+	while (_--)
+	{
+		int a, b;
+		cin >> a >> b;
+		if (a > b) swap(a, b);
+		adj[a].insert(b);
+	}
+
+	ll ans = 0;
+	for (int i = 1; i <= n; i++)
+	{
+		int node = rt(i);
+		if (adj[node].size() > 0)
+		{
+			int node1 = *adj[node].begin();
+			adj[node].erase(node1);
+			ans += one * adj[node].size();
+			node1 = rt(node1);
+			if (adj[node].size() < adj[node1].size()) swap(node, node1);
+			p[node1] = node;
+			for (int element : adj[node1])
+			{
+				if (adj[node].count(element) == 1) ans -= one;
+				else adj[node].insert(element);
+			}
+
+			adj[node1].clear();
+		}
+	}
+
+	cout << ans;
+}

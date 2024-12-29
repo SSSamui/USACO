@@ -1,0 +1,112 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+
+const int MXN = 1e5 + 1;
+
+vector<int> p(MXN);
+
+int rt(int node)
+{
+	if (p[node] == node) return node;
+	p[node] = rt(p[node]);
+	return p[node];
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, q;
+	cin >> n >> q;
+	for (int i = 1; i <= n; i++) p[i] = i;
+
+	vector<pair<char, int>> qur(0);
+	vector<pair<int, int>> edg(0);
+	set<int> usededg;
+	vector<bool> active(n + 1, true);
+	for (int i = 0; i < q; i++)
+	{
+		char a;
+		cin >> a;
+		if (a != 'A')
+		{
+			int b;
+			cin >> b;
+			qur.push_back({ a, b });
+			if (a == 'R') usededg.erase(--qur.back().second);
+			else active[b] = false;
+		}
+
+		else
+		{
+			usededg.insert(edg.size()), qur.push_back({ 'A', edg.size() });
+			int b, c;
+			cin >> b >> c;
+			edg.push_back({ b, c });
+		}
+	}
+
+	vector<vector<int>> incomp(n + 1, vector<int>(0));
+	for (int i = 1; i <= n; i++) if (!active[i]) incomp[i].push_back(i);
+	for (int element : usededg)
+	{
+		int a = edg[element].first, b = edg[element].second;
+		a = rt(a), b = rt(b);
+		if (!active[a]) swap(a, b);
+		if (!active[b])
+		{
+			if (active[a]) for (int i = 0; i < incomp[b].size(); i++) active[incomp[b][i]] = true;
+			else
+			{
+				if (incomp[a].size() < incomp[b].size()) swap(a, b);
+				p[b] = a;
+				for (int i = 0; i < incomp[b].size(); i++) incomp[a].push_back(incomp[b][i]);
+			}
+
+			incomp[b].clear();
+		}
+	}
+
+	vector<int> ans(n + 1, 0);
+	for (int i = 1; i <= n; i++) if (active[i]) ans[i] = q;
+	for (int i = q - 1; i > -1; i--)
+	{
+		if (qur[i].first == 'D')
+		{
+			qur[i].second = rt(qur[i].second);
+			if (!active[qur[i].second])
+			{
+				active[qur[i].second] = true;
+				for (int j = 0; j < incomp[qur[i].second].size(); j++) ans[incomp[qur[i].second][j]] = i;
+				incomp[qur[i].second].clear();
+			}
+		}
+
+		else if (qur[i].first == 'R')
+		{
+			int a = edg[qur[i].second].first, b = edg[qur[i].second].second;
+			a = rt(a), b = rt(b);
+			if (!active[a]) swap(a, b);
+			if (!active[b])
+			{
+				if (active[a]) for (int j = 0; j < incomp[b].size(); j++) active[incomp[b][j]] = true, ans[incomp[b][j]] = i;
+				else
+				{
+					if (incomp[a].size() < incomp[b].size()) swap(a, b);
+					p[b] = a;
+					for (int j = 0; j < incomp[b].size(); j++) incomp[a].push_back(incomp[b][j]);
+				}
+
+				incomp[b].clear();
+			}
+		}
+	}
+
+	for (int i = 1; i <= n; i++) cout << ans[i] << "\n";
+}

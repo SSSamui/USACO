@@ -1,0 +1,46 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <map>
+using namespace std;
+
+int main()
+{
+	ifstream fin("sort.in");
+	ofstream fout("sort.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n;
+	vector<int> a(n);
+	for (int i = 0; i < n; i++) fin >> a[i];
+
+	vector<pair<int, int>> tsrt(0);
+	for (int i = 0; i < n; i++) tsrt.push_back({ a[i], i });
+	sort(tsrt.begin(), tsrt.end());
+
+	map<pair<int, int>, int> inv;
+	for (int i = 0; i < n; i++) inv[tsrt[i]] = i;
+	for (int i = 0; i < n; i++) a[i] = inv[{a[i], i}];
+
+	vector<int> inv1(n);
+	for (int i = 0; i < n; i++) inv1[a[i]] = i;
+
+	int ans = 1;
+	int curr1 = 0, curr2 = 0;
+	for (int i = 0; i < n; i++)
+	{
+		if (a[i] > i) curr1++;
+		else if (a[i] < i) curr2--;
+		if (inv1[i] < i) curr1--;
+		else if (inv1[i] > i) curr2++;
+		ans = fmax(ans, curr1), ans = fmax(ans, curr2);
+	}
+
+	fout << ans;
+}

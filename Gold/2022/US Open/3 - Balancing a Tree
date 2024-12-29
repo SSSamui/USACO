@@ -1,0 +1,74 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+const int MXN = 1e5 + 1;
+
+vector<vector<int>> adj(MXN, vector<int>(0));
+vector<pair<int, int>> testcaseinv(MXN);
+vector<pair<int, int>> currinv(MXN);
+vector<pair<int, int>> sbtreeinv(MXN, { 0, 0 });
+int mid;
+
+bool dfs(int node = 1)
+{
+	currinv[node] = testcaseinv[node], sbtreeinv[node] = testcaseinv[node];
+	for (int nxt : adj[node])
+	{
+		if (!dfs(nxt)) return false;
+		sbtreeinv[node].first = fmax(sbtreeinv[nxt].first, sbtreeinv[node].first),
+			sbtreeinv[node].second = fmin(sbtreeinv[nxt].second, sbtreeinv[node].second);
+		currinv[node].first = fmax(currinv[node].first, sbtreeinv[nxt].first - mid),
+			currinv[node].second = fmin(currinv[node].second, sbtreeinv[nxt].second + mid);
+	}
+
+	if (currinv[node].second < currinv[node].first) return false;
+	return true;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int _, b;
+	cin >> _ >> b;
+	while (_--)
+	{
+		int n;
+		cin >> n;
+		vector<int> par(n + 1);
+		for (int i = 2; i <= n; i++) cin >> par[i];
+		for (int i = 2; i <= n; i++) adj[par[i]].push_back(i);
+
+		for (int i = 1; i <= n; i++) cin >> testcaseinv[i].first >> testcaseinv[i].second;
+		int l = 0, r = 1e9;
+		while (l < r)
+		{
+			mid = l + (r - l) / 2;
+			if (dfs()) r = mid;
+			else l = mid + 1;
+		}
+
+		cout << l << "\n";
+		if (b == 1)
+		{
+			mid = l;
+			dfs();
+
+			cout << currinv[1].first;
+			for (int i = 2; i <= n; i++)
+			{
+				currinv[i].first = fmax(currinv[i].first, currinv[par[i]].first - l);
+				cout << ' ' << currinv[i].first;
+				currinv[i].first = fmax(currinv[i].first, currinv[par[i]].first);
+			}
+
+			cout << "\n";
+		}
+
+		for (int i = 1; i < n; i++) adj[i].clear();
+	}
+}

@@ -1,0 +1,62 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	vector<ll> h(n + 1);
+	for (int i = 1; i <= n; i++) cin >> h[i];
+
+	vector<set<int>> sees(n + 1);
+	for (int i = 1; i < n; i++)
+	{
+		sees[i].insert(i + 1);
+		int lst = i + 1;
+		for (int j = i + 2; j <= n; j++) if ((h[lst] - h[i]) * (j - i) <= (h[j] - h[i]) * (lst - i)) lst = j, sees[i].insert(j);
+	}
+
+	int _;
+	cin >> _;
+	while (_--)
+	{
+		int ind;
+		ll tadd;
+		cin >> ind >> tadd;
+		h[ind] += tadd;
+		
+		if (ind < n)
+		{
+			sees[ind].clear();
+			int lst = ind + 1;
+			sees[ind].insert(ind + 1);
+			for (int i = ind + 2; i <= n; i++) if ((h[lst] - h[ind]) * (i - ind) <= (h[i] - h[ind]) * (lst - ind)) lst = i, sees[ind].insert(i);
+		}
+
+		for (int i = 1; i < ind; i++)
+		{
+			auto it = sees[i].upper_bound(ind);
+			while ((it != sees[i].end()) && ((h[ind] - h[i]) * ((*it) - i) > (h[*it] - h[i]) * (ind - i)))
+			{
+				sees[i].erase(it);
+				it = sees[i].upper_bound(ind);
+			}
+
+			it--;
+			if ((h[*it] - h[i]) * (ind - i) <= (h[ind] - h[i]) * ((*it) - i)) sees[i].insert(ind);
+		}
+
+		int ans = 0;
+		for (int i = 1; i <= n; i++) ans += sees[i].size();
+		cout << ans << "\n";
+	}
+}

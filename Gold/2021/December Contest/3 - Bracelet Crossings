@@ -1,0 +1,103 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <stack>
+using namespace std;
+
+bool solve()
+{
+	int n, m;
+	cin >> n >> m;
+	vector<vector<int>> col(m);
+	for (int i = 0; i < m; i++)
+	{
+		int a;
+		cin >> a;
+		while (a--)
+		{
+			int b;
+			cin >> b;
+			col[i].push_back(b);
+		}
+	}
+
+	vector<pair<int, int>> lst(n + 1, { -1, -1 }), curr(n + 1, { -1, -1 });
+	vector<bool> vis(n + 1, false);
+	for (int i = 0; i < m; i++)
+	{
+		for (int j = 0; j < col[i].size(); j++)
+		{
+			if (curr[col[i][j]].first == -1) curr[col[i][j]].first = j;
+			else curr[col[i][j]].second = j;
+		}
+
+		vector<int> nxt(col[i].size(), -1);
+		for (int j = 1; j <= n; j++) if (curr[j].first != -1)
+		{
+			if (lst[j].first != -1) nxt[curr[j].first] = lst[j].first, nxt[curr[j].second] = lst[j].second;
+			else if (vis[j]) return false;
+			else vis[j] = true;
+		}
+
+		int mxnxt = -1;
+		for (int j = 0; j < col[i].size(); j++) if (nxt[j] != -1)
+		{
+			if (nxt[j] < mxnxt) return false;
+			mxnxt = nxt[j];
+		}
+
+		vector<pair<int, int>> lstend(0), lstcurr(0);
+		for (int j = 1; j <= n; j++) if (lst[j].first != -1)
+		{
+			if (curr[j].first == -1) lstend.push_back(lst[j]);
+			else lstcurr.push_back(lst[j]);
+		}
+
+		sort(lstend.begin(), lstend.end()), sort(lstcurr.begin(), lstcurr.end());
+		int endind = 0, contind = 0;
+		for (endind = 0; endind < lstend.size(); endind++)
+		{
+			while ((contind < lstcurr.size()) && (lstcurr[contind].first < lstend[endind].first)) contind++;
+			if ((contind < lstcurr.size()) && (lstcurr[contind].second < lstend[endind].second)) return false;
+		}
+
+		lstend.clear(), lstcurr.clear();
+		vector<pair<int, int>> invlst(0);
+		for (int j = 1; j <= n; j++) if (curr[j].first != -1)
+		{
+			invlst.push_back(curr[j]);
+			if (lst[j].first == -1) lstend.push_back(curr[j]);
+			else lstcurr.push_back(curr[j]);
+		}
+
+		sort(lstend.begin(), lstend.end()), sort(lstcurr.begin(), lstcurr.end()), sort(invlst.begin(), invlst.end());
+		stack<pair<int, int>> invs;
+		for (int j = 0; j < invlst.size(); j++)
+		{
+			while (!invs.empty() && (invlst[j].first > invs.top().second)) invs.pop();
+			if (!invs.empty() && (invlst[j].second > invs.top().second)) return false;
+			invs.push(invlst[j]);
+		}
+
+		endind = 0, contind = 0;
+		for (endind = 0; endind < lstend.size(); endind++)
+		{
+			while ((contind < lstcurr.size()) && (lstcurr[contind].first < lstend[endind].first)) contind++;
+			if ((contind < lstcurr.size()) && (lstcurr[contind].second < lstend[endind].second)) return false;
+		}
+
+		lst = curr;
+		curr = vector<pair<int, int>>(n + 1, { -1, -1 });
+	}
+
+	return true;
+}
+
+int main()
+{
+	int _;
+	cin >> _;
+	while (_--) cout << (solve() ? "YES\n" : "NO\n");
+}

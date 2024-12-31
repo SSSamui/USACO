@@ -1,0 +1,100 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int MXN = 2e5 + 1;
+
+vector<ll> tme(MXN, 0), fert(MXN, 0), sbtreesum(MXN, 0), addfert(MXN, 0);
+vector<vector<int>> chd(MXN, vector<int>(0));
+vector<int> dep(MXN, 0);
+
+vector<int> mergesort(vector<int> orig)
+{
+	int N = orig.size();
+	if (N < 2) return orig;
+	vector<int> l(0), r(0);
+	for (int i = 0; i < N / 2; i++) l.push_back(orig[i]);
+	for (int i = N / 2; i < N; i++) r.push_back(orig[i]);
+	l = mergesort(l), r = mergesort(r);
+	orig.clear();
+	
+	int j = 0;
+	for (int i = 0; i < l.size(); i++)
+	{
+		while ((j < r.size()) && (tme[r[j]] * sbtreesum[l[i]] < tme[l[i]] * sbtreesum[r[j]])) orig.push_back(r[j++]);
+		orig.push_back(l[i]);
+	}
+
+	while (j < r.size()) orig.push_back(r[j++]);
+	return orig;
+}
+
+void dfs1(int node = 1)
+{
+	for (int nxt : chd[node])
+	{
+		dfs1(nxt);
+		tme[nxt] += 2;
+		tme[node] += tme[nxt], fert[node] += fert[nxt], sbtreesum[node] += sbtreesum[nxt];
+	}
+
+	chd[node] = mergesort(chd[node]);
+	ll currtme = 0;
+	for (int nxt : chd[node])
+	{
+		currtme++;
+		fert[node] += currtme * sbtreesum[nxt];
+		currtme--;
+		currtme += tme[nxt];
+	}
+}
+
+void dfs2(int node = 1)
+{
+	for (int nxt : chd[node])
+	{
+		dep[nxt] = dep[node] + 1;
+		dfs2(nxt);
+	}
+}
+
+void dfs3(int node = 1)
+{
+	ll currsum = 0, tmesum = 0;
+	for (int ind = chd[node].size() - 1; ind > -1; ind--)
+	{
+		addfert[chd[node][ind]] = addfert[node] + sbtreesum[chd[node][ind]] * tmesum - tme[chd[node][ind]] * currsum;
+		dfs3(chd[node][ind]);
+		currsum += sbtreesum[chd[node][ind]], tmesum += tme[chd[node][ind]];
+	}
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, t;
+	cin >> n >> t;
+	for (int i = 2; i <= n; i++)
+	{
+		int p;
+		cin >> p >> sbtreesum[i];
+		chd[p].push_back(i);
+	}
+
+	dfs1();
+	if (t == 1)
+	{
+		dfs2();
+		dfs3();
+		int find = 1;
+		for (int i = 2; i <= n; i++) if ((dep[i] > dep[find]) || ((dep[i] == dep[find]) && (addfert[i] < addfert[find]))) find = i;
+		tme[1] -= dep[find], fert[1] += addfert[find];
+	}
+
+	cout << tme[1] << ' ' << fert[1];
+}

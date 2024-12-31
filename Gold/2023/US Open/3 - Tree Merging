@@ -1,0 +1,149 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+using namespace std;
+
+const int MXN = 1001;
+
+vector<set<int>> chd(MXN);
+vector<int> oplst(MXN, -1), nplst(MXN, -1);
+vector<int> dep(MXN, 0);
+vector<set<pair<int, int>>> imp(MXN);
+vector<pair<int, int>> ops(0);
+
+void dfs2(int node)
+{
+	vector<pair<int, int>> trem(0);
+	for (pair<int, int> mvs : imp[node]) if (oplst[mvs.second] == node)
+	{
+		ops.push_back(mvs), trem.push_back(mvs);
+		oplst[mvs.first] = -1, chd[node].erase(mvs.first);
+		for (pair<int, int> impnde : imp[mvs.first]) imp[mvs.second].insert(impnde);
+		imp[mvs.first].clear();
+		for (int nxt : chd[mvs.first]) chd[mvs.second].insert(nxt), oplst[nxt] = mvs.second;
+		chd[mvs.first].clear();
+		dfs2(mvs.second);
+	}
+
+	for (int i = 0; i < trem.size(); i++) imp[node].erase(trem[i]);
+}
+
+int dfs1(int node)
+{
+	int ans = -1;
+	if (nplst[node] > -1) ans = node;
+	for (int nxt : chd[node])
+	{
+		dep[nxt] = dep[node] + 1;
+		int tmerg = dfs1(nxt);
+		if (tmerg > -1)
+		{
+			ans = nplst[tmerg];
+			if (tmerg != nxt) imp[node].insert({ nxt, tmerg });
+		}
+	}
+
+	dfs2(node);
+	return ans;
+}
+
+vector<set<int>> globdepset(MXN), possmerg(MXN);
+
+void dfs4(int node)
+{
+	possmerg[node] = globdepset[dep[node]];
+	while (*possmerg[node].begin() <= node) possmerg[node].erase(possmerg[node].begin());
+	for (int nxt : chd[node])
+	{
+		dfs4(nxt);
+		set<int> trem = possmerg[node];
+		for (int possnode : possmerg[nxt]) trem.erase(nplst[possnode]);
+		for (int tchk : trem) possmerg[node].erase(tchk);
+	}
+}
+
+void dfs5(int node)
+{
+	int mergwith = *possmerg[node].begin();
+	possmerg[node].clear(), oplst[node] = -1, ops.push_back({ node, mergwith });
+	for (int nxt : chd[node])
+	{
+		chd[mergwith].insert(nxt);
+		while (oplst[*possmerg[nxt].begin()] != mergwith) possmerg[nxt].erase(possmerg[nxt].begin());
+		dfs5(nxt);
+	}
+
+	chd[node].clear();
+}
+
+void dfs3(int node)
+{
+	vector<set<int>> locdepset(MXN);
+	set<int> tproc;
+	for (int nxt : chd[node])
+	{
+		if (nplst[nxt] == -1) tproc.insert(nxt);
+		else
+		{
+			dfs3(nxt);
+			int ind = dep[nxt];
+			while (!globdepset[ind].empty())
+			{
+				for (int tins : globdepset[ind]) locdepset[ind].insert(tins);
+				globdepset[ind].clear();
+				ind++;
+			}
+		}
+	}
+
+	globdepset = locdepset;
+	for (int nxt : tproc)
+	{
+		dfs4(nxt);
+		dfs5(nxt);
+	}
+
+	globdepset[dep[node]].insert(node);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int _;
+	cin >> _;
+	while (_--)
+	{
+		int n;
+		cin >> n;
+		for (int i = 1; i < n; i++)
+		{
+			int v;
+			cin >> v;
+			cin >> oplst[v];
+			chd[oplst[v]].insert(v);
+		}
+		
+		int rt = 0;
+		for (int i = 1; i <= n; i++) if (oplst[i] == -1) rt = i, oplst[i] = 0;
+		int m;
+		cin >> m;
+		for (int i = 1; i < m; i++)
+		{
+			int v;
+			cin >> v;
+			cin >> nplst[v];
+		}
+
+		dfs1(rt);
+		dfs3(rt);
+		cout << ops.size() << "\n";
+		for (int i = 0; i < ops.size(); i++) cout << ops[i].first << ' ' << ops[i].second << "\n";
+		for (int i = 1; i <= n; i++) oplst[i] = -1, nplst[i] = -1, dep[i] = 0, chd[i].clear();
+		ops.clear();
+	}
+}

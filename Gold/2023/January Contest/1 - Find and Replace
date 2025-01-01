@@ -1,0 +1,61 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <string>
+using namespace std;
+using ll = long long;
+
+struct node
+{
+	char val;
+	ll sz;
+	node* l;
+	node* r;
+
+	void print(ll mn, ll mx)
+	{
+		if (mn < 1ll) mn = 1;
+		if (mx > sz) mx = sz;
+		if (mn > mx) return;
+		if (val != '.')
+		{
+			cout << val;
+			return;
+		}
+
+		l->print(mn, mx), r->print(mn - l->sz, mx - l->sz);
+	}
+};
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	ll l, r;
+	int n;
+	cin >> l >> r >> n;
+	vector<pair<char, string>> ops(n);
+	for (int i = n - 1; i > -1; i--) cin >> ops[i].first >> ops[i].second;
+
+	vector<node*> curr(26);
+	for (char c = 'a'; c <= 'z'; c++) curr[c - 'a'] = new node{ c, 1 };
+	for (int i = 0; i < n; i++)
+	{
+		node* res = nullptr;
+		for (char c : ops[i].second)
+		{
+			if (res == nullptr) res = curr[c - 'a'];
+			else if (res->sz < r)
+			{
+				node* tmerg = curr[c - 'a'];
+				res = new node{ '.', res->sz + tmerg->sz, res, tmerg };
+			}
+		}
+
+		curr[ops[i].first - 'a'] = res;
+	}
+
+	curr[0]->print(l, r);
+}

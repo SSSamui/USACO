@@ -1,0 +1,90 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+const int NEGINF = -1e9;
+
+int k;
+
+int mnres(vector<int> x, vector<int> h)
+{
+	int n = x.size();
+	if (n % 2 == 0) return 0;
+	int ans = h[0];
+	for (int i = 2; i < n; i += 2) ans = fmin(ans, h[i]);
+	for (int i = 1; i < n; i += 2) if (x[i + 1] - x[i - 1] <= k) ans = fmin(ans, h[i]);
+	return ans;
+}
+
+int mxres(vector<int> x, vector<int> w)
+{
+	int n = x.size();
+	if (n == 1) return w[0];
+
+	vector<int> lstind(n);
+	int ind = 0;
+	for (int i = 0; i < n; i++)
+	{
+		while (x[i] - x[ind] > k) ind++;
+		lstind[i] = ind - 1;
+	}
+
+	vector<int> incdp(n, NEGINF), nincdp(n, NEGINF);
+	vector<int> totdp(n, NEGINF);
+	nincdp[0] = w[0], incdp[1] = 0;
+	totdp[0] = w[0], totdp[1] = 0;
+	for (int i = 2; i < n; i++)
+	{
+		incdp[i] = totdp[i - 2];
+		if (x[i] - x[i - 2] <= k)
+		{
+			int opt2 = w[i - 1];
+			if ((i - lstind[i - 1]) % 2 == 0) opt2 += incdp[lstind[i - 1] + 1];
+			else if (lstind[i - 1] > -1) opt2 += totdp[lstind[i - 1]];
+			incdp[i] = fmax(incdp[i], opt2);
+		}
+
+		if ((i - lstind[i]) % 2 == 1)
+		{
+			if (lstind[i] == -1) nincdp[i] = w[i];
+			else nincdp[i] = w[i] + totdp[lstind[i]];
+		}
+
+		else if (lstind[i] > -1) nincdp[i] = w[i] + incdp[lstind[i] + 1];
+
+		totdp[i] = fmax(incdp[i], nincdp[i]);
+	}
+
+	return totdp[n - 1];
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int t, n;
+	cin >> t >> n >> k;
+	
+	int ans = 0;
+	vector<int> currx(0), currw(0);
+	while (n--)
+	{
+		int x, w;
+		cin >> x >> w;
+		if (currx.empty() || (x - currx.back() <= k)) currx.push_back(x), currw.push_back(w);
+		else
+		{
+			if (t == 1) ans += mnres(currx, currw);
+			else ans += mxres(currx, currw);
+			currx.clear(), currw.clear();
+			currx.push_back(x), currw.push_back(w);
+		}
+	}
+
+	if (t == 1) ans += mnres(currx, currw);
+	else ans += mxres(currx, currw);
+	cout << ans;
+}

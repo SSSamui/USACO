@@ -1,0 +1,79 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+using namespace std;
+
+const int MXN = 2e5 + 1;
+
+vector<int> par(MXN);
+
+int root(int node)
+{
+	if (par[node] == node) return node;
+	par[node] = root(par[node]);
+	return par[node];
+}
+
+int main()
+{
+	ifstream fin("fcolor.in");
+	ofstream fout("fcolor.out");
+
+	int n, m;
+	fin >> n >> m;
+	for (int i = 1; i <= n; i++) par[i] = i;
+
+	vector<set<int>> edg(n + 1), adm(n + 1);
+	while (m--)
+	{
+		int a, b;
+		fin >> a >> b;
+		edg[a].insert(b), adm[b].insert(a);
+	}
+
+	set<int> tprc;
+	for (int i = 1; i <= n; i++) if (edg[i].size() > 1) tprc.insert(i);
+	while (!tprc.empty())
+	{
+		int prc = *tprc.begin();
+		tprc.erase(prc);
+
+		vector<int> chd(0);
+		for (int element : edg[prc]) chd.push_back(element);
+
+		int rt = chd[0];
+		for (int i = 1; i < chd.size(); i++) if (edg[chd[i]].size() + adm[chd[i]].size() > edg[rt].size() + adm[rt].size()) rt = chd[i];
+		for (int i = 0; i < chd.size(); i++) if (chd[i] != rt)
+		{
+			par[chd[i]] = rt, tprc.erase(chd[i]);
+			for (int lst : adm[chd[i]])
+			{
+				edg[lst].erase(chd[i]), edg[lst].insert(rt);
+				adm[rt].insert(lst);
+				if (edg[lst].size() == 1) tprc.erase(lst);
+			}
+
+			adm[chd[i]].clear();
+			for (int nxt : edg[chd[i]])
+			{
+				adm[nxt].erase(chd[i]), adm[nxt].insert(rt);
+				edg[rt].insert(nxt);
+			}
+
+			edg[chd[i]].clear();
+		}
+
+		if (edg[rt].size() > 1) tprc.insert(rt);
+	}
+
+	vector<int> inv(n + 1, 0);
+	int cnt = 1;
+	for (int i = 1; i <= n; i++)
+	{
+		if (inv[root(i)] == 0) inv[root(i)] = cnt++;
+		fout << inv[root(i)] << "\n";
+	}
+}

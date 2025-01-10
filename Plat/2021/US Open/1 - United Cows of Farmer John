@@ -1,0 +1,127 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+struct node
+{
+	ll cnt, val, lz;
+};
+
+const int sz = 1 << 18;
+
+vector<node> segtree(2 * sz);
+
+void pushup(int p)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	segtree[p].val = segtree[lc].val + segtree[rc].val, segtree[p].cnt = segtree[lc].cnt + segtree[rc].cnt;
+}
+
+void pushdown(int p)
+{
+	int lc = 2 * p, rc = 2 * p + 1;
+	segtree[lc].val += segtree[p].lz * segtree[lc].cnt, segtree[lc].lz += segtree[p].lz;
+	segtree[rc].val += segtree[p].lz * segtree[rc].cnt, segtree[rc].lz += segtree[p].lz;
+	segtree[p].lz = 0;
+}
+
+void build(int p, int l, int r)
+{
+	if (l == r)
+	{
+		segtree[p].val = 0, segtree[p].cnt = 1, segtree[p].lz = 0;
+		return;
+	}
+
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	build(lc, l, mid), build(rc, mid + 1, r);
+	pushup(p);
+}
+
+void deact(int p, int l, int r, int node)
+{
+	if (l == r)
+	{
+		segtree[p].val = 0, segtree[p].cnt = 0;
+		return;
+	}
+
+	pushdown(p);
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	if (node > mid) deact(rc, mid + 1, r, node);
+	else deact(lc, l, mid, node);
+	pushup(p);
+}
+
+void rngupd(int p, int l, int r, int a, int b, ll tadd)
+{
+	if (a > b) return;
+	if ((r < a) || (b < l)) return;
+	if ((a <= l) && (r <= b))
+	{
+		segtree[p].val += tadd * segtree[p].cnt, segtree[p].lz += tadd;
+		return;
+	}
+
+	pushdown(p);
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	rngupd(lc, l, mid, a, b, tadd), rngupd(rc, mid + 1, r, a, b, tadd);
+	pushup(p);
+}
+
+ll rq(int p, int l, int r, int a, int b)
+{
+	if (a > b) return 0ll;
+	if ((r < a) || (b < l)) return 0ll;
+	if ((a <= l) && (r <= b)) return segtree[p].val;
+	pushdown(p);
+	int mid = l + (r - l) / 2;
+	int lc = 2 * p, rc = 2 * p + 1;
+	return rq(lc, l, mid, a, b) + rq(rc, mid + 1, r, a, b);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	build(1, 0, n - 1);
+
+	vector<int> brd(n);
+	for (int i = 0; i < n; i++) cin >> brd[i];
+
+	vector<vector<int>> inv(n + 1, vector<int>(0));
+	for (int i = 0; i < n; i++) inv[brd[i]].push_back(i);
+	vector<int> ind(n + 1, 0);
+
+	ll ans = 0;
+	for (int i = 0; i < n; i++)
+	{
+		if (ind[brd[i]] == 0)
+		{
+			ans += rq(1, 0, n - 1, 0, i - 1);
+			rngupd(1, 0, n - 1, 0, i - 1, 1ll);
+		}
+
+		else
+		{
+			ans += rq(1, 0, n - 1, inv[brd[i]][ind[brd[i]] - 1] + 1, i - 1);
+			deact(1, 0, n - 1, inv[brd[i]][ind[brd[i]] - 1]);
+			rngupd(1, 0, n - 1, inv[brd[i]][ind[brd[i]] - 1], i - 1, 1ll);
+			if (ind[brd[i]] == 1) rngupd(1, 0, n - 1, 0, inv[brd[i]][0] - 1, -1ll);
+			else rngupd(1, 0, n - 1, inv[brd[i]][ind[brd[i]] - 2], inv[brd[i]][ind[brd[i]] - 1] - 1, -1ll);
+		}
+
+		ind[brd[i]]++;
+	}
+
+	cout << ans;
+}

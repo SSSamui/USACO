@@ -1,0 +1,74 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <cassert>
+using namespace std;
+using ll = long long;
+using val = pair<int, ll>;
+
+const int MXN = 2e5 + 1;
+const ll MOD = 1e9 + 7;
+
+vector<ll> pw(MXN, 1);
+
+vector<int> par(MXN);
+vector<vector<int>> comp(MXN, vector<int>(0));
+vector<val> sbtree(MXN, { 0, 0 }), path(MXN, { 0, 0 });
+
+val op(val a, val b)
+{
+	ll nv = a.second * pw[b.first] + b.second;
+	nv %= MOD;
+	return { a.first + b.first, nv };
+}
+
+int rt(int node)
+{
+	if (par[node] == node) return node;
+	int frt = rt(par[node]);
+	path[node] = op(path[node], path[par[node]]);
+	par[node] = frt;
+	return frt;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	for (int i = 1; i <= n; i++) par[i] = i, comp[i].push_back(i), pw[i] = (pw[i - 1] * 10) % MOD;
+	for (int i = 1; i <= m; i++)
+	{
+		int a, b;
+		cin >> a >> b;
+		
+		int a1 = rt(a), b1 = rt(b);
+		if (a1 != b1)
+		{
+			if (comp[a1].size() < comp[b1].size()) swap(a1, b1), swap(a, b);
+			val aop = op({ 1, 1ll * i }, op(sbtree[a], path[a])), bop = op({ 1, 1ll * i }, op(sbtree[b], path[b]));
+			for (int node : comp[b1]) if (node != b1)
+			{
+				assert(rt(node) == b1);
+				path[node] = op(path[node], aop);
+			}
+
+			sbtree[b1] = op(sbtree[b1], aop);
+			par[a1] = b1, path[a1] = bop;
+
+			swap(comp[a1], comp[b1]);
+			for (int node : comp[a1]) comp[b1].push_back(node);
+			comp[a1].clear();
+		}
+	}
+
+	for (int i = 1; i <= n; i++)
+	{
+		int r = rt(i);
+		cout << op(sbtree[i], path[i]).second << "\n";
+	}
+}

@@ -1,0 +1,65 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int MXN = 2e5 + 1;
+const ll INF = 1e18;
+
+vector<vector<int>> chd(MXN, vector<int>(0));
+vector<vector<pair<int, ll>>> adj(MXN, vector<pair<int, ll>>(0));
+vector<ll> conn(MXN, 1);
+vector<vector<vector<ll>>> dp(MXN, vector<vector<ll>>(2, vector<ll>(2, INF)));
+
+void szdfs(int node = 1)
+{
+	for (int nxt : chd[node])
+	{
+		szdfs(nxt);
+		conn[node] += conn[nxt];
+	}
+
+	for (int nxt : chd[node]) adj[node].push_back({ nxt, conn[node] - conn[nxt] });
+}
+
+void dpdfs(int node = 1)
+{
+	dp[node][0][0] = 0, dp[node][1][1] = conn[node], dp[node][1][0] = conn[node] * 2;
+	for (pair<int, ll> nxt : adj[node])
+	{
+		dpdfs(nxt.first);
+		vector<vector<ll>> nans(2, vector<ll>(2, INF));
+		for (int a = 0; a < 2; a++) for (int b = 0; b < 2; b++)
+		{
+			nans[a][b] = fmin(nans[a][b], dp[node][a][b] + dp[nxt.first][1][0]);
+			for (int c = 0; c < 2; c++)
+			{
+				nans[a | c][b] = fmin(nans[a | c][b], dp[node][a][b] + dp[nxt.first][c][0] + (nxt.second * 2));
+				nans[a | c][1 - b] = fmin(nans[a | c][1 - b], dp[node][a][b] + dp[nxt.first][c][1] + nxt.second);
+			}
+		}
+
+		dp[node] = nans;
+	}
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	for (int i = 2; i <= n; i++)
+	{
+		int p;
+		cin >> p;
+		chd[p].push_back(i);
+	}
+
+	szdfs();
+	dpdfs();
+	cout << dp[1][1][0];
+}

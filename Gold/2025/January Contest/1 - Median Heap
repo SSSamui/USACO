@@ -1,0 +1,197 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <queue>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+const ll INF = 1e18;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+
+	vector<pair<int, int>> a(0);
+	vector<ll> c(n + 1);
+	for (int i = 1; i <= n; i++)
+	{
+		int A;
+		cin >> A >> c[i];
+		a.push_back({ A, i });
+	}
+
+	sort(a.begin(), a.end());
+	queue<pair<int, int>> q1, q2;
+	for (int i = 0; i < n; i++) q1.push(a[i]);
+	vector<int> curr(n + 1, 0);
+
+	vector<vector<ll>> dp(n + 1, vector<ll>(3, INF));
+	for (int ind = n; ind > 0; ind--)
+	{
+		if (ind * 2 > n) dp[ind][0] = 0, dp[ind][1] = c[ind], dp[ind][2] = c[ind];
+		else
+		{
+			int lc = 2 * ind, rc = 2 * ind + 1;
+			int cnt0 = 0, cnt2 = 0;
+			for (int i1 = 0; i1 < 3; i1++)
+			{
+				if (i1 == 0) cnt0++;
+				else if (i1 == 2) cnt2++;
+				for (int i2 = 0; i2 < 3; i2++)
+				{
+					if (i2 == 0) cnt0++;
+					else if (i2 == 2) cnt2++;
+					for (int i3 = 0; i3 < 3; i3++)
+					{
+						if (i3 == 0) cnt0++;
+						else if (i3 == 2) cnt2++;
+
+						ll upd = dp[lc][i2] + dp[rc][i3];
+						if (i1 != curr[ind]) upd += c[ind];
+
+						if (cnt0 > 1) { if (upd < dp[ind][0]) dp[ind][0] = upd; }
+						else if (cnt2 > 1) { if (upd < dp[ind][2]) dp[ind][2] = upd; }
+						else { if (upd < dp[ind][1]) dp[ind][1] = upd; }
+
+						if (i3 == 0) cnt0--;
+						else if (i3 == 2) cnt2--;
+					}
+
+					if (i2 == 0) cnt0--;
+					else if (i2 == 2) cnt2--;
+				}
+
+				if (i1 == 0) cnt0--;
+				else if (i1 == 2) cnt2--;
+			}
+		}
+	}
+
+	int q;
+	cin >> q;
+	vector<pair<int, int>> qs(0);
+	for (int i = 0; i < q; i++)
+	{
+		int Q;
+		cin >> Q;
+		qs.push_back({ Q, i });
+	}
+
+	sort(qs.begin(), qs.end());
+	vector<ll> ans(q);
+	for (int i = 0; i < q; i++)
+	{
+		while (!q1.empty() && (q1.front().first <= qs[i].first))
+		{
+			int ind = q1.front().second;
+			q2.push(q1.front());
+			q1.pop();
+
+			curr[ind] = 1;
+			while (ind > 0)
+			{
+				dp[ind][0] = INF, dp[ind][1] = INF; dp[ind][2] = INF;
+				if (ind * 2 > n) dp[ind][0] = c[ind], dp[ind][1] = 0, dp[ind][2] = c[ind];
+				else
+				{
+					int lc = 2 * ind, rc = 2 * ind + 1;
+					int cnt0 = 0, cnt2 = 0;
+					for (int i1 = 0; i1 < 3; i1++)
+					{
+						if (i1 == 0) cnt0++;
+						else if (i1 == 2) cnt2++;
+						for (int i2 = 0; i2 < 3; i2++)
+						{
+							if (i2 == 0) cnt0++;
+							else if (i2 == 2) cnt2++;
+							for (int i3 = 0; i3 < 3; i3++)
+							{
+								if (i3 == 0) cnt0++;
+								else if (i3 == 2) cnt2++;
+
+								ll upd = dp[lc][i2] + dp[rc][i3];
+								if (i1 != curr[ind]) upd += c[ind];
+
+								if (cnt0 > 1) { if (upd < dp[ind][0]) dp[ind][0] = upd; }
+								else if (cnt2 > 1) { if (upd < dp[ind][2]) dp[ind][2] = upd; }
+								else { if (upd < dp[ind][1]) dp[ind][1] = upd; }
+
+								if (i3 == 0) cnt0--;
+								else if (i3 == 2) cnt2--;
+							}
+
+							if (i2 == 0) cnt0--;
+							else if (i2 == 2) cnt2--;
+						}
+
+						if (i1 == 0) cnt0--;
+						else if (i1 == 2) cnt2--;
+					}
+				}
+
+				ind /= 2;
+			}
+		}
+
+		while (!q2.empty() && (q2.front().first < qs[i].first))
+		{
+			int ind = q2.front().second;
+			q2.pop();
+
+			curr[ind] = 2;
+			while (ind > 0)
+			{
+				dp[ind][0] = INF, dp[ind][1] = INF; dp[ind][2] = INF;
+				if (ind * 2 > n) dp[ind][0] = c[ind], dp[ind][1] = c[ind], dp[ind][2] = 0;
+				else
+				{
+					int lc = 2 * ind, rc = 2 * ind + 1;
+					int cnt0 = 0, cnt2 = 0;
+					for (int i1 = 0; i1 < 3; i1++)
+					{
+						if (i1 == 0) cnt0++;
+						else if (i1 == 2) cnt2++;
+						for (int i2 = 0; i2 < 3; i2++)
+						{
+							if (i2 == 0) cnt0++;
+							else if (i2 == 2) cnt2++;
+							for (int i3 = 0; i3 < 3; i3++)
+							{
+								if (i3 == 0) cnt0++;
+								else if (i3 == 2) cnt2++;
+
+								ll upd = dp[lc][i2] + dp[rc][i3];
+								if (i1 != curr[ind]) upd += c[ind];
+
+								if (cnt0 > 1) { if (upd < dp[ind][0]) dp[ind][0] = upd; }
+								else if (cnt2 > 1) { if (upd < dp[ind][2]) dp[ind][2] = upd; }
+								else { if (upd < dp[ind][1]) dp[ind][1] = upd; }
+
+								if (i3 == 0) cnt0--;
+								else if (i3 == 2) cnt2--;
+							}
+
+							if (i2 == 0) cnt0--;
+							else if (i2 == 2) cnt2--;
+						}
+
+						if (i1 == 0) cnt0--;
+						else if (i1 == 2) cnt2--;
+					}
+				}
+
+				ind /= 2;
+			}
+		}
+
+		ans[qs[i].second] = dp[1][1];
+	}
+
+	for (int i = 0; i < q; i++) cout << ans[i] << "\n";
+}

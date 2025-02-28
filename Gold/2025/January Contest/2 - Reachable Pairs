@@ -1,0 +1,80 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <stack>
+#include <string>
+using namespace std;
+using ll = long long;
+
+const int MXN = 2e5;
+
+ll ans = 0;
+vector<int> p(MXN), act(MXN, 0);
+
+int rt(int node)
+{
+	if (p[node] == node) return node;
+	p[node] = rt(p[node]);
+	return p[node];
+}
+
+void join(int a, int b)
+{
+	a = rt(a), b = rt(b);
+	if (a == b) return;
+	ans += 1ll * act[a] * act[b];
+	p[b] = a, act[a] += act[b];
+	act[b] = 0;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	for (int i = 0; i < n; i++) p[i] = i;
+	
+	string s;
+	cin >> s;
+	vector<vector<int>> adj(n, vector<int>(0));
+	while (m--)
+	{
+		int a, b;
+		cin >> a >> b;
+		a--, b--;
+		if (a > b) swap(a, b);
+
+		if ((s[a] == '1') && (s[b] == '1')) join(a, b);
+		else if (s[a] == '1') adj[b].push_back(a);
+		else adj[a].push_back(b);
+	}
+
+	stack<ll> sans;
+	for (int i = n - 1; i > -1; i--)
+	{
+		int node = i;
+		if (s[i] == '1')
+		{
+			node = rt(node);
+			ans += 1ll * act[node];
+			act[node]++;
+			sans.push(ans);
+		}
+
+		else
+		{
+			act[node]++;
+			for (int nxt : adj[node]) join(node, nxt);
+			sans.push(ans);
+		}
+	}
+
+	while (!sans.empty())
+	{
+		cout << sans.top() << "\n";
+		sans.pop();
+	}
+}

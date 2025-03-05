@@ -1,0 +1,74 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int MXN = 2e5 + 1;
+
+vector<ll> c(MXN);
+vector<vector<int>> inv(MXN, vector<int>(0));
+vector<pair<ll, ll>> dp(MXN, { 0, 0 });
+vector<bool> vis(MXN, false);
+
+void dfs(int node, int rt)
+{
+	dp[node] = { c[node], 0 }, vis[node] = true;
+	for (int nxt : inv[node]) if (nxt != rt)
+	{
+		dfs(nxt, rt);
+		dp[node].second += dp[nxt].first;
+		if (dp[nxt].first < dp[nxt].second) dp[node].first += dp[nxt].first;
+		else dp[node].first += dp[nxt].second;
+	}
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	vector<int> a(n + 1);
+	for (int i = 1; i <= n; i++)
+	{
+		cin >> a[i];
+		inv[a[i]].push_back(i);
+	}
+
+	for (int i = 1; i <= n; i++) cin >> c[i];
+
+	ll ans = 0;
+	for (int i = 1; i <= n; i++) if (!vis[i])
+	{
+		int p1 = a[i], p2 = a[a[i]];
+		while (p1 != p2) p1 = a[p1], p2 = a[a[p2]];
+		vector<int> loop(1, p1);
+		p2 = a[p2];
+		while (p2 != p1)
+		{
+			loop.push_back(p2);
+			p2 = a[p2];
+		}
+
+		if (loop.size() == 1)
+		{
+			dfs(loop[0], loop[0]);
+			ll tadd = dp[loop[0]].first - c[loop[0]];
+			ans += tadd;
+		}
+
+		else
+		{
+			dfs(loop[0], loop[0]);
+			ll tadd = dp[loop[0]].first;
+			dfs(loop[1], loop[1]);
+			if (dp[loop[1]].first < tadd) tadd = dp[loop[1]].first;
+			ans += tadd;
+		}
+	}
+
+	cout << ans;
+}

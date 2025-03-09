@@ -1,0 +1,176 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <set>
+#include <map>
+using namespace std;
+using ll = long long;
+
+const ll MOD = 1e9 + 7;
+
+vector<pair<int, int>> a(0);
+vector<int> pref(1, 0);
+vector<ll> prefl(1, 0);
+
+ll ex(ll a, int b)
+{
+	if (b == 0) return 1ll;
+	if (b % 2 == 1)
+	{
+		ll ans = ex(a, b - 1);
+		ans *= a;
+		ans %= MOD;
+		return ans;
+	}
+
+	ll ans = ex(a, b / 2);
+	ans *= ans;
+	ans %= MOD;
+	return ans;
+}
+
+int getprefl(int x)
+{
+	int l = 0, r = a.size();
+	while (l < r)
+	{
+		int m = l + (r - l) / 2;
+		if (a[m].first > x) r = m;
+		else l = m + 1;
+	}
+
+	if (l == 0) return 0ll;
+	l--;
+	int ans = prefl[l] - a[l].first + 1;
+	if (x < a[l].second) ans += x;
+	else ans += a[l].second;
+	return ans;
+}
+
+int getlen(int l, int r)
+{
+	int ans = getprefl(r);
+	if (l == 0) return ans;
+	ans -= getprefl(l - 1);
+	return ans;
+}
+
+ll getpref(int x)
+{
+	int l = 0, r = a.size();
+	while (l < r)
+	{
+		int m = l + (r - l) / 2;
+		if (a[m].first > x) r = m;
+		else l = m + 1;
+	}
+
+	if (l == 0) return 0ll;
+	l--;
+	ll ans = pref[l];
+	int pw = x;
+	if (l != 0) pw -= a[l - 1].second;
+	ans *= ex(2ll, pw);
+	ans %= MOD;
+
+	pw = 1 - a[l].first;
+	if (x < a[l].second) pw += x;
+	else pw += a[l].second;
+	ll tadd = ex(2ll, pw) - 1;
+	if (x > a[l].second)
+	{
+		tadd *= ex(2ll, x - a[l].second);
+		tadd %= MOD;
+	}
+
+	ans += tadd;
+	ans %= MOD;
+	return ans;
+}
+
+ll gethash(int l, int r)
+{
+	if (l >= r) return 0ll;
+	ll ans = getpref(r);
+	if (l == 0) return ans;
+	ll tmin = getpref(l - 1) * ex(2ll, r - l + 1);
+	tmin %= MOD;
+	ans -= tmin;
+	if (ans < 0) ans += MOD;
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m, q;
+	cin >> n >> m >> q;
+	map<int, int> ops;
+	while (m--)
+	{
+		int l, r;
+		cin >> l >> r;
+		ops[l - 1]++, ops[r]--;
+	}
+
+	int stt = -1;
+	bool ended = true;
+	for (auto it : ops)
+	{
+		int opnm = it.second;
+		opnm %= 2;
+		if (opnm < 0) opnm += 2;
+		if (opnm == 1)
+		{
+			int pos = it.first;
+			if (ended) stt = pos, ended = false;
+			else
+			{
+				ended = true;
+				a.push_back({ stt, pos - 1 });
+
+				int len = pos - stt;
+				prefl.push_back(prefl.back() + len);
+
+				int pw = pos - 1;
+				if (a.size() > 1) pw -= a[a.size() - 2].second;
+				ll hsh = pref.back() * ex(2ll, pw);
+				hsh %= MOD;
+				hsh += ex(2ll, len) - 1;
+				hsh %= MOD;
+				pref.push_back(hsh);
+			}
+		}
+	}
+
+	while (q--)
+	{
+		int l, r, k;
+		cin >> l >> r >> k;
+		l--, r--;
+
+		int lo = l - 1, hi = r;
+		while (lo < hi)
+		{
+			int mid = (lo + hi + 1) / 2;
+			if (getlen(l, mid) + (r - mid) < k) hi = mid - 1;
+			else lo = mid;
+		}
+
+		ll len = getlen(l, lo);
+		if (len >= k) cout << (ex(2ll, k) - 1) << "\n";
+		else
+		{
+			ll fhash = gethash(lo + 1, r), phash = ex(2ll, len) - 1;
+			phash *= ex(2ll, r - lo);
+			phash %= MOD;
+			phash += fhash;
+			phash %= MOD;
+			cout << phash << "\n";
+		}
+	}
+}

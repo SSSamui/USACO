@@ -1,0 +1,55 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	vector<vector<int>> adj(n, vector<int>(n, 1));
+	for (int i = 0; i < m; i++)
+	{
+		int a, b;
+		cin >> a >> b;
+		a--, b--;
+		adj[a][b] = -1, adj[b][a] = -1;
+	}
+
+	int sz = 1 << n;
+	vector<int> clqadd(sz, 0);
+	for (int i = 1; i < sz; i++)
+	{
+		vector<int> bits(0);
+		for (int j = 0; j < n; j++) if (i & (1 << j)) bits.push_back(j);
+		for (int j = 0; j < bits.size(); j++) for (int k = j + 1; k < bits.size(); k++) clqadd[i] += adj[bits[j]][bits[k]];
+	}
+
+	vector<int> dp(sz, 0);
+	for (int i = 3; i < sz; i++)
+	{
+		vector<int> bits(0);
+		for (int j = 0; j < n; j++) if (i & (1 << j)) bits.push_back(j);
+		if (bits.size() > 1)
+		{
+			int sz1 = 1 << (bits.size() - 1);
+			for (int j = 0; j < sz1; j++)
+			{
+				int clq = 1 << bits.back();
+				for (int k = 0; k < bits.size() - 1; k++) if (j & (1 << k)) clq += 1 << bits[k];
+				int ndp = clqadd[clq] + dp[i - clq];
+				if (ndp > dp[i]) dp[i] = ndp;
+			}
+		}
+	}
+
+	int tot = n * (n - 1);
+	tot /= 2;
+	tot -= m;
+	tot -= dp.back();
+	cout << tot;
+}

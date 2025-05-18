@@ -1,0 +1,101 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+using namespace std;
+
+const int sz = 1 << 17;
+const int MXH = 1e9 + 1;
+
+vector<int> l(2 * sz, MXH), r(2 * sz, 0);
+
+void updl(int ind, int tupd)
+{
+	ind += sz;
+	l[ind] = tupd;
+	while (ind > 1)
+	{
+		ind /= 2;
+		l[ind] = min(l[2 * ind], l[2 * ind + 1]);
+	}
+}
+
+int rql(int rl, int rr)
+{
+	rl += sz, rr += sz;
+	int ans = MXH;
+	while (rl <= rr)
+	{
+		if (rl % 2 == 1) ans = min(ans, l[rl++]);
+		if (rr % 2 == 0) ans = min(ans, l[rr--]);
+		rl /= 2, rr /= 2;
+	}
+
+	return ans;
+}
+
+void updr(int ind, int tupd)
+{
+	ind += sz;
+	r[ind] = tupd;
+	while (ind > 1)
+	{
+		ind /= 2;
+		r[ind] = max(r[2 * ind], r[2 * ind + 1]);
+	}
+}
+
+int rqr(int rl, int rr)
+{
+	rl += sz, rr += sz;
+	int ans = 0;
+	while (rl <= rr)
+	{
+		if (rl % 2 == 1) ans = max(ans, r[rl++]);
+		if (rr % 2 == 0) ans = max(ans, r[rr--]);
+		rl /= 2, rr /= 2;
+	}
+
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, k;
+	cin >> n >> k;
+
+	vector<multiset<int>> ord(0);
+	multiset<int> emp;
+	while (n--)
+	{
+		int a;
+		cin >> a;
+		if ((ord.empty()) || (rqr(ord.size() - 1, ord.size() - 1) > a + k))
+		{
+			updl(ord.size(), a), updr(ord.size(), a);
+			ord.push_back(emp);
+			ord.back().insert(a);
+		}
+
+		else
+		{
+			int tinsl = 0, tinsr = ord.size() - 1;
+			while (tinsl < tinsr)
+			{
+				int mid = tinsl + (tinsr - tinsl) / 2;
+				if ((rql(mid + 1, ord.size() - 1) < a - k) || (rqr(mid, ord.size() - 1) > a + k)) tinsl = mid + 1;
+				else tinsr = mid;
+			}
+
+			ord[tinsl].insert(a);
+			if (a < rql(tinsl, tinsl)) updl(tinsl, a);
+			if (a > rqr(tinsl, tinsl)) updr(tinsl, a);
+		}
+	}
+
+	for (int i = 0; i < ord.size(); i++) for (int element : ord[i]) cout << element << "\n";
+}

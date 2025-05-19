@@ -1,0 +1,64 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const ll MOD = 1e9 + 7;
+
+ll pw(ll b, ll e)
+{
+	if (e == 0ll) return 1ll;
+	if (e % 2 == 0)
+	{
+		ll ans = pw(b, e / 2ll);
+		ans *= ans;
+		ans %= MOD;
+		return ans;
+	}
+
+	ll ans = pw(b, e - 1ll);
+	ans *= b;
+	ans %= MOD;
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int k, n;
+	ll l;
+	cin >> k >> n >> l;
+	vector<ll> fact(n + 1, 1ll);
+	for (int i = 1; i <= n; i++) fact[i] = (fact[i - 1] * i) % MOD;
+
+	vector<char> str(n);
+	for (int i = 0; i < n; i++) cin >> str[i];
+
+	ll divkfact = pw(fact[k], MOD - 2ll);
+
+	ll ans = 1ll;
+	int cnt = 0;
+	while (!str.empty())
+	{
+		if (str.back() == 'O') cnt++;
+		else
+		{
+			ans *= fact[cnt];
+			ans %= MOD;
+			ans *= divkfact;
+			ans %= MOD;
+			ans *= pw(fact[cnt - k], MOD - 2ll);
+			ans %= MOD;
+			cnt -= k;
+		}
+
+		str.pop_back();
+	}
+
+	ans = pw(ans, l);
+	cout << ans;
+}

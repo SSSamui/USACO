@@ -1,0 +1,56 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <map>
+#include <set>
+using namespace std;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, _;
+	cin >> n >> _;
+	vector<int> a(n + 1);
+	for (int i = 1; i <= n; i++) cin >> a[i];
+	vector<int> cnt(n + 1, 0);
+	for (int i = 1; i <= n; i++) cnt[a[i]]++;
+	map<int, set<int>> invcnt;
+	for (int i = 1; i <= n; i++) if (cnt[i] > 0) invcnt[cnt[i]].insert(i);
+
+	while (_--)
+	{
+		int i, j;
+		cin >> i >> j;
+
+		invcnt[cnt[a[i]]].erase(a[i]);
+		if (invcnt[cnt[a[i]]].empty()) invcnt.erase(cnt[a[i]]);
+		cnt[a[i]]--;
+		if (cnt[a[i]] > 0) invcnt[cnt[a[i]]].insert(a[i]);
+
+		a[i] = j;
+		invcnt[cnt[j]].erase(j);
+		if (invcnt[cnt[j]].empty()) invcnt.erase(cnt[j]);
+		cnt[j]++;
+		invcnt[cnt[j]].insert(j);
+
+		auto it = invcnt.begin();
+		auto rit = invcnt.rbegin();
+		int ans = 0, cmax = 0, omax = rit->first;
+		while (it != invcnt.end())
+		{
+			while ((rit != invcnt.rend()) && (rit->first + it->first >= omax))
+			{
+				cmax = max(cmax, *(rit->second.rbegin()));
+				rit++;
+			}
+
+			ans = max(ans, cmax - *(it->second.begin()));
+			it++;
+		}
+
+		cout << ans << "\n";
+	}
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <set>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int _;
+	cin >> _;
+	while (_--)
+	{
+		int n;
+		cin >> n;
+		vector<pair<ll, ll>> tsk(0);
+		for (int i = 0; i < n; i++)
+		{
+			ll s, t;
+			cin >> s >> t;
+			tsk.push_back({ s + t, t });
+		}
+
+		sort(tsk.begin(), tsk.end());
+		multiset<ll> tms;
+		ll ttl = 0;
+		for (int i = 0; i < n; i++)
+		{
+			ttl += tsk[i].second, tms.insert(tsk[i].second);
+			if (ttl > tsk[i].first)
+			{
+				ll tmn = *tms.rbegin();
+				ttl -= tmn;
+				auto it = tms.end();
+				it--;
+				tms.erase(it);
+			}
+		}
+
+		cout << tms.size() << "\n";
+	}
+}

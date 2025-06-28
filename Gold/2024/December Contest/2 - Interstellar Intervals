@@ -1,0 +1,131 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <string>
+using namespace std;
+
+const int sz = 1 << 18;
+const int MOD = 1e9 + 7;
+
+vector<int> osegtree(2 * sz, 0), esegtree(2 * sz, 0);
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	string s;
+	cin >> n >> s;
+
+	if (s[0] == 'B') cout << 0;
+	else
+	{
+		vector<int> dp(n + 1, 0);
+		dp[0] = 1;
+		int ind = sz;
+		while (ind > 0)
+		{
+			esegtree[ind]++;
+			ind /= 2;
+		}
+
+		vector<int> nxtb(n, n);
+		for (int i = n - 1; i > -1; i--)
+		{
+			if (i < n - 1) nxtb[i] = nxtb[i + 1];
+			if (s[i] == 'B') nxtb[i] = i;
+		}
+
+		int lstr = -1;
+		vector<vector<int>> remp(2 * n, vector<int>(0));
+		for (int i = 0; i < n; i++)
+		{
+			int len = 2 * (nxtb[i] - i);
+			remp[i + len - 1].push_back(i);
+		}
+
+		for (int i = 0; i < n; i++)
+		{
+			if (s[i] == 'R') lstr = i;
+			else
+			{
+				if (s[i] == 'X') dp[i + 1] = dp[i];
+				if (i % 2 == 0)
+				{
+					int len = 2 * (i - lstr);
+					int stt = i - len + 1;
+					stt = max(stt, 1);
+					int l = stt / 2, r = (i - 1) / 2;
+					l += sz, r += sz;
+					while (l <= r)
+					{
+						if (l % 2 == 1) dp[i + 1] = (dp[i + 1] + osegtree[l++]) % MOD;
+						if (r % 2 == 0) dp[i + 1] = (dp[i + 1] + osegtree[r--]) % MOD;
+						l /= 2, r /= 2;
+					}
+
+					int ind = i / 2;
+					ind += sz;
+					while (ind > 0)
+					{
+						osegtree[ind] += dp[i + 1];
+						osegtree[ind] %= MOD;
+						ind /= 2;
+					}
+				}
+
+				else
+				{
+					int len = 2 * (i - lstr);
+					int stt = i - len + 1;
+					stt = max(stt, 0);
+					int l = stt / 2, r = i / 2;
+					l += sz, r += sz;
+					while (l <= r)
+					{
+						if (l % 2 == 1) dp[i + 1] = (dp[i + 1] + esegtree[l++]) % MOD;
+						if (r % 2 == 0) dp[i + 1] = (dp[i + 1] + esegtree[r--]) % MOD;
+						l /= 2, r /= 2;
+					}
+
+					int ind = (i + 1) / 2;
+					ind += sz;
+					while (ind > 0)
+					{
+						esegtree[ind] += dp[i + 1];
+						esegtree[ind] %= MOD;
+						ind /= 2;
+					}
+				}
+			}
+
+			if (i % 2 == 0) for (int j = 0; j < remp[i].size(); j++)
+			{
+				ind = remp[i][j] / 2;
+				ind += sz;
+				osegtree[ind] = 0;
+				while (ind > 1)
+				{
+					ind /= 2;
+					osegtree[ind] = (osegtree[2 * ind] + osegtree[2 * ind + 1]) % MOD;
+				}
+			}
+
+			else for (int j = 0; j < remp[i].size(); j++)
+			{
+				ind = remp[i][j] / 2;
+				ind += sz;
+				esegtree[ind] = 0;
+				while (ind > 1)
+				{
+					ind /= 2;
+					esegtree[ind] = (esegtree[2 * ind] + esegtree[2 * ind + 1]) % MOD;
+				}
+			}
+		}
+
+		cout << dp[n];
+	}
+}

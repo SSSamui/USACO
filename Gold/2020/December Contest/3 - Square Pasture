@@ -1,0 +1,137 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <set>
+using namespace std;
+using ll = long long;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	vector<pair<ll, ll>> coords(n);
+	for (int i = 0; i < n; i++) cin >> coords[i].first >> coords[i].second;
+	sort(coords.begin(), coords.end());
+
+	int ans = n + 1;
+	for (int i = 0; i < n; i++) for (int j = i + 1; j < n; j++)
+	{
+		set<pair<ll, ll>> lft, rgt;
+		vector<pair<ll, ll>> ly(0), ry(0), rg(0);
+		for (int k = 0; k < i; k++) ly.push_back({ coords[k].second, coords[k].first });
+		for (int k = i; k <= j; k++) rg.push_back({ coords[k].second, coords[k].first });
+		for (int k = j + 1; k < n; k++) ry.push_back({ coords[k].second, coords[k].first });
+		sort(ly.begin(), ly.end()), sort(rg.begin(), rg.end()), sort(ry.begin(), ry.end());
+		int l = 0, r = 0;
+		for (int k = 0; k < rg.size(); k++)
+		{
+			if (rg[k].second == coords[i].first) l = k;
+			else if (rg[k].second == coords[j].first) r = k;
+		}
+
+		lft.insert({ -1e9, 1e9 }), rgt.insert({ 2e9, 1e9 });
+		if (l > r) swap(l, r);
+		int lind = 0, rind = 0, mind = 0, hind = 0;
+		while ((lind < ly.size()) && (ly[lind].first < rg[0].first)) lind++;
+		while ((rind < ry.size()) && (ry[rind].first < rg[0].first)) rind++;
+		for (int k = 0; k <= l; k++)
+		{
+			while ((*lft.rbegin()).second < rg[k].first) lft.erase(*lft.rbegin());
+			while ((*rgt.begin()).second < rg[k].first) rgt.erase(*rgt.begin());
+			while ((hind < rg.size()) && (rg[hind].first - rg[k].first < coords[j].first - coords[i].first)) hind++;
+			bool cont = true;
+			while (cont)
+			{
+				if (mind == rg.size()) cont = false;
+				else if ((*(rgt.begin())).first - (*(lft.rbegin())).first < rg[mind].first - rg[k].first) cont = false;
+				else
+				{
+					mind++;
+					if (mind == rg.size()) cont = false;
+					else
+					{
+						while ((lind < ly.size()) && (ly[lind].first < rg[mind].first))
+						{
+							lft.insert({ ly[lind].second + 1, ly[lind].first });
+							lind++;
+						}
+
+						while ((rind < ry.size()) && (ry[rind].first < rg[mind].first))
+						{
+							rgt.insert({ ry[rind].second - 1, ry[rind].first });
+							rind++;
+						}
+					}
+				}
+			}
+
+			int crnt = max(hind, r);
+			if (crnt < mind) ans += (mind - crnt);
+		}
+	}
+
+	for (int i = 0; i < n; i++) swap(coords[i].first, coords[i].second);
+	sort(coords.begin(), coords.end());
+	for (int i = 0; i < n; i++) for (int j = i + 1; j < n; j++)
+	{
+		set<pair<ll, ll>> lft, rgt;
+		vector<pair<ll, ll>> ly(0), ry(0), rg(0);
+		for (int k = 0; k < i; k++) ly.push_back({ coords[k].second, coords[k].first });
+		for (int k = i; k <= j; k++) rg.push_back({ coords[k].second, coords[k].first });
+		for (int k = j + 1; k < n; k++) ry.push_back({ coords[k].second, coords[k].first });
+		sort(ly.begin(), ly.end()), sort(rg.begin(), rg.end()), sort(ry.begin(), ry.end());
+		int l = 0, r = 0;
+		for (int k = 0; k < rg.size(); k++)
+		{
+			if (rg[k].second == coords[i].first) l = k;
+			else if (rg[k].second == coords[j].first) r = k;
+		}
+
+		lft.insert({ -1e9, 1e9 }), rgt.insert({ 2e9, 1e9 });
+		if (l > r) swap(l, r);
+		int lind = 0, rind = 0, mind = 0, hind = 0;
+		while ((lind < ly.size()) && (ly[lind].first < rg[0].first)) lind++;
+		while ((rind < ry.size()) && (ry[rind].first < rg[0].first)) rind++;
+		for (int k = 0; k <= l; k++)
+		{
+			while ((*lft.rbegin()).second < rg[k].first) lft.erase(*lft.rbegin());
+			while ((*rgt.begin()).second < rg[k].first) rgt.erase(*rgt.begin());
+			while ((hind < rg.size()) && (rg[hind].first - rg[k].first <= coords[j].first - coords[i].first)) hind++;
+			bool cont = true;
+			while (cont)
+			{
+				if (mind == rg.size()) cont = false;
+				else if ((*(rgt.begin())).first - (*(lft.rbegin())).first < rg[mind].first - rg[k].first) cont = false;
+				else
+				{
+					mind++;
+					if (mind == rg.size()) cont = false;
+					else
+					{
+						while ((lind < ly.size()) && (ly[lind].first < rg[mind].first))
+						{
+							lft.insert({ ly[lind].second + 1, ly[lind].first });
+							lind++;
+						}
+
+						while ((rind < ry.size()) && (ry[rind].first < rg[mind].first))
+						{
+							rgt.insert({ ry[rind].second - 1, ry[rind].first });
+							rind++;
+						}
+					}
+				}
+			}
+
+			int crnt = max(hind, r);
+			if (crnt < mind) ans += (mind - crnt);
+		}
+	}
+
+	cout << ans;
+}

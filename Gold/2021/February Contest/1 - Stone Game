@@ -1,0 +1,41 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int MXA = 1e6;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	vector<int> psums(MXA + 1, 0);
+	while (n--)
+	{
+		int a;
+		cin >> a;
+		psums[a]++;
+	}
+
+	for (int i = 1; i <= MXA; i++) psums[i] += psums[i - 1];
+	ll ans = 0;
+	for (int m1 = 1; m1 <= MXA; m1++)
+	{
+		vector<pair<int, int>> oflr(0);
+		for (int flr = 1; m1 * flr <= MXA; flr++)
+		{
+			int cnt = psums[min(MXA, m1 * (flr + 1) - 1)] - psums[m1 * flr - 1];
+			if (cnt % 2 == 1) oflr.push_back({ cnt, flr });
+		}
+
+		if (oflr.size() == 1) { if (oflr[0].second == 1) ans += 1ll * oflr[0].first; }
+		else if (oflr.size() == 2) if (oflr[1].second - oflr[0].second == 1) ans += 1ll * oflr[1].first;
+	}
+
+	cout << ans;
+}

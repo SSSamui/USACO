@@ -1,0 +1,63 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const ll MOD = 1e9 + 7;
+
+ll pw(ll b, ll e)
+{
+	if (e == 0) return 1;
+	if (e % 2 == 1) return (pw(b, e - 1) * b) % MOD;
+	ll ans = pw(b, e / 2);
+	return (ans * ans) % MOD;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	vector<ll> inv(n + 1, 0), c(n + 1, 0);
+	for (int i = 1; i <= n; i++) inv[i] = pw(1ll * i, MOD - 2ll), c[i] = ((c[i - 1] + 1ll) * i) % MOD;
+	vector<int> bset(n, 0);
+	for (int i = 0; i < m; i++) for (int j = 0; j < n; j++)
+	{
+		bset[j] *= 2;
+		char c;
+		cin >> c;
+		if (c == 'H') bset[j]++;
+	}
+
+	int sz = 1 << m;
+	vector<int> invb(sz, 0);
+	for (int i = 0; i < n; i++) invb[bset[i]]++;
+	vector<ll> dp(sz, 1);
+	vector<vector<ll>> add(sz, vector<ll>(1, 0));
+	ll ans = 0;
+	for (int i = sz - 1; i > -1; i--)
+	{
+		for (int j = 1; j < add[i].size(); j++)
+		{
+			add[i][j] *= inv[j];
+			add[i][j] %= MOD;
+			dp[i] += add[i][j];
+			dp[i] %= MOD;
+		}
+
+		dp[i] *= c[invb[i]];
+		dp[i] %= MOD;
+		add[i][0] = dp[i], ans = (ans + dp[i]) % MOD;
+		for (int j = 0; j < m; j++) if (i & (1 << j)) for (int k = 0; k < add[i].size(); k++)
+		{
+			if (add[i ^ (1 << j)].size() == k + 1) add[i ^ (1 << j)].push_back(add[i][k]);
+			else add[i ^ (1 << j)][k + 1] = (add[i ^ (1 << j)][k + 1] + add[i][k]) % MOD;
+		}
+	}
+
+	cout << ans;
+}

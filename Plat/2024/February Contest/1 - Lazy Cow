@@ -1,0 +1,191 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <algorithm>
+#include <cassert>
+using namespace std;
+using ll = long long;
+
+const ll MOD = 1e9 + 7;
+const ll MXM = 1e6 + 1;
+
+ll pw(ll b, ll e)
+{
+	if (e < 0) return 0ll;
+	if (e == 0) return 1ll;
+	if (e % 2 == 1) return ((pw(b, e - 1) * b) % MOD);
+	ll ans = pw(b, e / 2);
+	return ((ans * ans) % MOD);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	set<vector<ll>> inv;
+	inv.insert({ 1, MXM, 0, 0 });
+	ll ans = 0;
+	int _;
+	cin >> _;
+	while (_--)
+	{
+		ll m, b;
+		cin >> m >> b;
+
+		auto it = inv.lower_bound({ m + 1 });
+		it--;
+		vector<ll> curr = *it;
+		ll lx = curr[0], rx = curr[1], ly = curr[2], d = curr[3];
+		ll cnum = ly + d * (m - lx + 1ll);
+		if (b > cnum)
+		{
+			ll diff = b - cnum;
+			if (rx > m)
+			{
+				inv.erase(it);
+				inv.insert({ lx, m, ly, d }), inv.insert({ m + 1, rx, b, d });
+			}
+
+			else
+			{
+				it++;
+				lx = (*it)[0], rx = (*it)[1], ly = (*it)[2], d = (*it)[3];
+				assert(lx == m + 1);
+				inv.erase(it);
+				inv.insert({ lx, rx, b, d });
+			}
+
+			bool cont = true;
+			ll cdiff = diff;
+			while (cont)
+			{
+				it = inv.lower_bound({ m + 1 });
+				it--;
+				curr = *it;
+				lx = curr[0], rx = curr[1], ly = curr[2], d = curr[3];
+				assert(rx == m);
+				ll clen = rx - lx + 1ll;
+				ans = (ans - ((clen * pw(3ll, d - 1ll)) % MOD) + MOD) % MOD;
+				inv.erase(it);
+				ll ldiff = 1e12 + 1;
+				it = inv.lower_bound({ m + 1 });
+				if (it != inv.begin())
+				{
+					it--;
+					ldiff = (*it)[3];
+				}
+
+				if ((ldiff - d) * clen > cdiff)
+				{
+					cont = false;
+					ll madd = cdiff / clen, cntl = cdiff % clen;
+					if (cntl == 0)
+					{
+						inv.insert({ lx, rx, ly, d + madd });
+						ans = (ans + ((clen * pw(3ll, d + madd - 1ll)) % MOD)) % MOD;
+						if (d + madd == 0)
+							inv.erase({ lx, rx, ly, 0 }), inv.erase({ rx + 1, MXM, ly, 0 }), inv.insert({ lx, MXM, ly, 0 });
+					}
+
+					else
+					{
+						inv.insert({ lx + cntl, rx, ly + cntl * (d + madd + 1ll), d + madd });
+						ans = (ans + (((clen - cntl) * pw(3ll, d + madd - 1ll)) % MOD)) % MOD;
+						if (d + madd == 0)
+							inv.erase({ lx + cntl, rx, ly + cntl, 0 }), inv.erase({ rx + 1, MXM, ly + cntl, 0 }),
+							inv.insert({ lx + cntl, MXM, ly + cntl, 0 });
+
+						inv.insert({ lx, lx + cntl - 1ll, ly, d + madd + 1ll });
+						ans = (ans + ((cntl * pw(3ll, d + madd)) % MOD)) % MOD;
+						if (d + madd + 1ll == ldiff)
+						{
+							inv.erase({ lx, lx + cntl - 1ll, ly, d + madd + 1ll });
+							it = inv.lower_bound({ m + 1 });
+							it--;
+							it--;
+							rx = lx + cntl - 1ll;
+							lx = (*it)[0], ly = (*it)[2], d = d + madd + 1ll;
+							inv.erase(it);
+							inv.insert({ lx, rx, ly, d });
+						}
+					}
+				}
+
+				else
+				{
+					cdiff -= (ldiff - d) * clen;
+					ll ilx = (*it)[0], irx = (*it)[1], ily = (*it)[2], id = (*it)[3];
+					ans = (ans - (((irx - ilx + 1ll) * pw(3ll, id - 1ll)) % MOD) + MOD) % MOD;
+					inv.erase(it);
+					inv.insert({ ilx, rx, ily, id });
+					ans = (ans + (((rx - ilx + 1ll) * pw(3ll, id - 1ll)) % MOD)) % MOD;
+				}
+			}
+
+			cont = true, cdiff = diff;
+			it = inv.lower_bound({ m + 1 });
+			if (it != inv.end()) while (cont)
+			{
+				it = inv.lower_bound({ m + 1 });
+				curr = *it;
+				lx = curr[0], rx = curr[1], ly = curr[2], d = curr[3];
+				assert(lx == m + 1);
+				assert(ly == b);
+				if (d == 0) cont = false;
+				else
+				{
+					inv.erase(it);
+					ll clen = rx - lx + 1ll;
+					ans = (ans - ((clen * pw(3ll, d - 1ll)) % MOD) + MOD) % MOD;
+					it = inv.lower_bound({ m + 1 });
+					ll ndiff = (*it)[3];
+					if ((d - ndiff) * clen > cdiff)
+					{
+						cont = false;
+						ll msub = cdiff / clen, cntl = cdiff % clen;
+						if (cntl == 0)
+						{
+							inv.insert({ lx, rx, ly, d - msub });
+							ans = (ans + ((clen * pw(3ll, d - msub - 1ll)) % MOD)) % MOD;
+						}
+
+						else
+						{
+							inv.insert({ lx, rx - cntl, ly, d - msub });
+							ans = (ans + (((clen - cntl) * pw(3ll, d - msub - 1ll)) % MOD)) % MOD;
+
+							inv.insert({ rx - cntl + 1ll, rx, ly + (d - msub) * (clen - cntl), d - msub - 1ll });
+							ans = (ans + (cntl * pw(3ll, d - msub - 2ll) % MOD)) % MOD;
+							if (d - msub - 1ll == ndiff)
+							{
+								inv.erase({ rx - cntl + 1ll, rx, ly + (d - msub) * (clen - cntl), d - msub - 1ll });
+								lx = rx - cntl + 1ll, ly += (d - msub) * (clen - cntl);
+								d = d - msub - 1ll;
+								it = inv.lower_bound({ m + 1 });
+								it++;
+								rx = (*it)[1];
+								inv.erase(it);
+								inv.insert({ lx, rx, ly, d });
+							}
+						}
+					}
+
+					else
+					{
+						cdiff -= (d - ndiff) * clen;
+						ll ilx = (*it)[0], irx = (*it)[1], ily = (*it)[2], id = (*it)[3];
+						ans = (ans - (((irx - ilx + 1ll) * pw(3ll, id - 1ll)) % MOD) + MOD) % MOD;
+						inv.erase(it);
+						inv.insert({ lx, irx, ly, id });
+						ans = (ans + (((irx - lx + 1ll) * pw(3ll, id - 1ll)) % MOD)) % MOD;
+					}
+				}
+			}
+		}
+
+		cout << ans << "\n";
+	}
+}

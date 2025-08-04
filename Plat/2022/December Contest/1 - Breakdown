@@ -1,0 +1,80 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+const int INF = 1e9;
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, k;
+	cin >> n >> k;
+	int h1 = k / 2;
+	int h2 = k - h1;
+
+	vector<vector<int>> w(n + 1, vector<int>(n + 1));
+	for (int i = 1; i <= n; i++) for (int j = 1; j <= n; j++) cin >> w[i][j];
+
+	vector<vector<int>> dp1(5, vector<int>(n + 1, INF)), dpn(5, vector<int>(n + 1, INF));
+	vector<vector<vector<int>>> bet(3, vector<vector<int>>(n + 1, vector<int>(n + 1, INF)));
+	for (int i = 1; i <= n; i++) bet[0][i][i] = 0;
+	dp1[0][1] = 0, dpn[0][n] = 0;
+
+	vector<vector<int>> edg(n * n, vector<int>(2));
+	for (int i = 0; i < n * n; i++) cin >> edg[i][0] >> edg[i][1];
+	vector<int> fans(0);
+	while (!edg.empty())
+	{
+		int ans = INF;
+		for (int b = 1; b <= n; b++) ans = min(ans, dp1[h1][b] + dpn[h2][b]);
+		if (ans == INF) fans.push_back(-1);
+		else fans.push_back(ans);
+
+		int i = edg.back()[0], j = edg.back()[1];
+		edg.pop_back();
+
+		bet[1][i][j] = w[i][j];
+		for (int b = 1; b <= n; b++)
+			bet[2][i][b] = min(bet[2][i][b], bet[1][i][j] + bet[1][j][b]), bet[2][b][j] = min(bet[2][b][j], bet[1][b][i] + bet[1][i][j]);
+
+		dp1[1][j] = bet[1][1][j];
+		dpn[1][i] = bet[1][i][n];
+
+		for (int b = 1; b <= n; b++) dp1[2][b] = bet[2][1][b];
+		for (int b = 1; b <= n; b++) dpn[2][b] = bet[2][b][n];
+
+		for (int b = 1; b <= n; b++)
+		{
+			dp1[3][b] = min(dp1[3][b], dp1[2][j] + bet[1][j][b]);
+			if (i == 1) dp1[3][b] = min(dp1[3][b], dp1[1][j] + bet[2][j][b]);
+			if (j == b) dp1[3][b] = min(dp1[3][b], dp1[2][i] + bet[1][i][j]);
+
+			dpn[3][b] = min(dpn[3][b], bet[1][b][i] + dpn[2][i]);
+			if (i == b) dpn[3][b] = min(dpn[3][b], bet[1][i][j] + dpn[2][j]);
+			if (j == n) dpn[3][b] = min(dpn[3][b], bet[2][b][i] + dpn[1][i]);
+		}
+
+		for (int b = 1; b <= n; b++)
+		{
+			dp1[4][b] = min(dp1[4][b], dp1[3][j] + bet[1][j][b]);
+			dp1[4][b] = min(dp1[4][b], dp1[2][j] + bet[2][j][b]);
+			if (i == 1) for (int a = 1; a <= n; a++) dp1[4][b] = min(dp1[4][b], dp1[3][a] + bet[1][a][b]);
+			if (j == b) dp1[4][b] = min(dp1[4][b], dp1[3][i] + bet[1][i][j]);
+
+			dpn[4][b] = min(dpn[4][b], bet[1][b][i] + dpn[3][i]);
+			dpn[4][b] = min(dpn[4][b], bet[2][b][i] + dpn[2][i]);
+			if (i == b) dpn[4][b] = min(dpn[4][b], bet[1][i][j] + dpn[3][j]);
+			if (j == n) for (int a = 1; a <= n; a++) dpn[4][b] = min(dpn[4][b], bet[1][b][a] + dpn[3][a]);
+		}
+	}
+
+	while (!fans.empty())
+	{
+		cout << fans.back() << "\n";
+		fans.pop_back();
+	}
+}

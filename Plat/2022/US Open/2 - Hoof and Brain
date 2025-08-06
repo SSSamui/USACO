@@ -1,0 +1,94 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <set>
+using namespace std;
+
+const int MXN = 1e5 + 1;
+
+vector<int> p(MXN);
+vector<set<int>> edg(MXN), inv(MXN);
+set<int> tmg;
+
+int rt(int node)
+{
+	if (p[node] == node) return node;
+	p[node] = rt(p[node]);
+	return p[node];
+}
+
+void join(int a, int b)
+{
+	if (edg[a].size() + inv[a].size() < edg[b].size() + inv[b].size()) swap(a, b);
+	p[b] = a;
+	if (tmg.count(b) == 1) tmg.erase(b), tmg.insert(a);
+
+	for (int nxt : edg[b]) inv[nxt].erase(b), inv[nxt].insert(a), edg[a].insert(nxt);
+	for (int lst : inv[b])
+	{
+		edg[lst].erase(b), edg[lst].insert(a), inv[a].insert(lst);
+		if (edg[lst].size() == 1) tmg.insert(lst);
+	}
+
+	edg[b].clear(), inv[b].clear();
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n, m;
+	cin >> n >> m;
+	for (int i = 1; i <= n; i++) p[i] = i;
+
+	while (m--)
+	{
+		int a, b;
+		cin >> a >> b;
+		edg[a].insert(b), inv[b].insert(a);
+	}
+
+	set<int> trem;
+	for (int i = 1; i <= n; i++) if (edg[i].size() == 0) trem.insert(i);
+	while (!trem.empty())
+	{
+		int rem = *trem.begin();
+		trem.erase(rem);
+
+		for (int lst : inv[rem])
+		{
+			edg[lst].erase(rem);
+			if (edg[lst].size() == 0) trem.insert(lst);
+		}
+
+		inv[rem].clear();
+	}
+
+	for (int i = 1; i <= n; i++) if (edg[i].size() == 1) tmg.insert(i);
+	while (!tmg.empty())
+	{
+		int a = *tmg.begin();
+		tmg.erase(a);
+		int b = *edg[a].begin();
+		if (a != b)
+		{
+			edg[a].erase(b), inv[b].erase(a);
+			join(a, b);
+		}
+	}
+
+	int _;
+	cin >> _;
+	while (_--)
+	{
+		int a, b;
+		cin >> a >> b;
+		a = rt(a), b = rt(b);
+		if (edg[a].size() == 0) cout << 'B';
+		else if (edg[b].size() == 0) cout << 'B';
+		else if (a == b) cout << 'B';
+		else cout << 'H';
+	}
+}

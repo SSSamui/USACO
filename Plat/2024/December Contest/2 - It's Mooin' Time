@@ -1,0 +1,122 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const ll INF = 1e18;
+
+int l;
+
+vector<vector<vector<ll>>> solve(vector<char> str, vector<ll> cst)
+{
+	int n = str.size();
+	if (n == 1)
+	{
+		if (l == 1)
+		{
+			vector<vector<vector<ll>>> ans(2, vector<vector<ll>>(1, vector<ll>(1, 0)));
+			if (str[0] == 'O') ans[1][0][0] = cst[0];
+			return ans;
+		}
+
+		else
+		{
+			vector<vector<vector<ll>>> ans(1, vector<vector<ll>>(l, vector<ll>(l, INF)));
+			ans[0][0][0] = 0, ans[0][0][1] = 0, ans[0][1][0] = 0;
+			if (str[0] == 'M') ans[0][1][0] = cst[0];
+			else ans[0][0][1] = cst[0];
+			return ans;
+		}
+	}
+
+	int lsz = n / 2;
+	int rsz = n - lsz;
+
+	vector<char> strl(0), strr(0);
+	for (int i = 0; i < lsz; i++) strl.push_back(str[i]);
+	for (int i = lsz; i < n; i++) strr.push_back(str[i]);
+
+	vector<ll> cstl(0), cstr(0);
+	for (int i = 0; i < lsz; i++) cstl.push_back(cst[i]);
+	for (int i = lsz; i < n; i++) cstr.push_back(cst[i]);
+
+	vector<vector<vector<ll>>> ansl = solve(strl, cstl), ansr = solve(strr, cstr);
+
+	vector<vector<vector<ll>>> ans(n / l + 1, vector<vector<ll>>(l, vector<ll>(l, INF)));
+	for (int b = 0; b < l; b++) for (int c = 0; c < l; c++) if (b + c <= n)
+	{
+		if (b >= lsz) { for (int a = 0; l * a + b + c <= n; a++) ans[a][b][c] = ansl[0][lsz][0] + ansr[a][b - lsz][c]; }
+		else if (c > rsz) { for (int a = 0; l * a + b + c <= n; a++) ans[a][b][c] = ansl[a][b][c - rsz] + ansr[0][rsz][0]; }
+		else if (c == rsz) { for (int a = 0; l * a + b + c <= n; a++) ans[a][b][c] = ansl[a][b][0] + ansr[0][0][rsz]; }
+		else
+		{
+			ans[0][b][c] = ansl[0][b][0] + ansr[0][0][c];
+			int pref00 = 1, suff00 = 1;
+			while ((l * pref00 + b <= lsz) && (l * suff00 + c <= rsz))
+			{
+				if (ansl[pref00][b][0] - ansl[pref00 - 1][b][0] < ansr[suff00][0][c] - ansr[suff00 - 1][0][c]) pref00++;
+				else suff00++;
+				ans[pref00 + suff00 - 2][b][c] = ansl[pref00 - 1][b][0] + ansr[suff00 - 1][0][c];
+			}
+
+			while (l * pref00 + b <= lsz)
+			{
+				pref00++;
+				ans[pref00 + suff00 - 2][b][c] = ansl[pref00 - 1][b][0] + ansr[suff00 - 1][0][c];
+			}
+
+			while (l * suff00 + c <= rsz)
+			{
+				suff00++;
+				ans[pref00 + suff00 - 2][b][c] = ansl[pref00 - 1][b][0] + ansr[suff00 - 1][0][c];
+			}
+
+			if (b + c + l <= n)
+			{
+				for (int i = 1; i < l; i++) if (b + i <= lsz) if (c + (l - i) <= rsz)
+				{
+					ans[1][b][c] = min(ans[1][b][c], ansl[0][b][i] + ansr[0][l - i][c]);
+					int pref = 1, suff = 1;
+					while ((l * pref + b + i <= lsz) && (l * suff + c + (l - i) <= rsz))
+					{
+						if (ansl[pref][b][i] - ansl[pref - 1][b][i] < ansr[suff][l - i][c] - ansr[suff - 1][l - i][c]) pref++;
+						else suff++;
+						ans[pref + suff - 1][b][c] = min(ans[pref + suff - 1][b][c], ansl[pref - 1][b][i] + ansr[suff - 1][l - i][c]);
+					}
+
+					while (l * pref + b + i <= lsz)
+					{
+						pref++;
+						ans[pref + suff - 1][b][c] = min(ans[pref + suff - 1][b][c], ansl[pref - 1][b][i] + ansr[suff - 1][l - i][c]);
+					}
+
+					while (l * suff + c + (l - i) <= rsz)
+					{
+						suff++;
+						ans[pref + suff - 1][b][c] = min(ans[pref + suff - 1][b][c], ansl[pref - 1][b][i] + ansr[suff - 1][l - i][c]);
+					}
+				}
+			}
+		}
+	}
+
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> l >> n;
+	vector<char> str(n);
+	vector<ll> cst(n);
+	for (int i = 0; i < n; i++) cin >> str[i];
+	for (int i = 0; i < n; i++) cin >> cst[i];
+
+	vector<vector<vector<ll>>> ans = solve(str, cst);
+	for (int i = 1; i <= n / l; i++) cout << ans[i][0][0] << "\n";
+}

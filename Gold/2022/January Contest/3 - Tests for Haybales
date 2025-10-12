@@ -1,0 +1,55 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int MXN = 1e5 + 1;
+
+ll counter = -1;
+
+vector<ll> res(MXN);
+vector<vector<int>> chd(MXN, vector<int>(0));
+vector<int> p(MXN, 0), dep(MXN, 0);
+vector<ll> tadd(MXN, 0);
+
+void dfs(int node)
+{
+	if (chd[node].size() == 0)
+	{
+		if (node == 0) res[node] = ++counter;
+		else if (p[node] == p[node - 1]) res[node] = counter;
+		else res[node] = ++counter;
+	}
+
+	else
+	{
+		for (int nxt : chd[node])
+		{
+			dep[nxt] = dep[node] + 1;
+			dfs(nxt);
+		}
+
+		res[node] = counter;
+	}
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	for (int i = 0; i < n; i++)
+	{
+		cin >> p[i];
+		chd[p[i]].push_back(i);
+	}
+
+	dfs(n);
+	if (res[0] == 0) for (int i = 0; i <= n; i++) res[i]++;
+	cout << res[n] << "\n";
+	for (int i = 0; i < n; i++) cout << (res[n] + 1ll) * (dep[0] - dep[i]) + res[i] << "\n";
+}

@@ -1,0 +1,100 @@
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <map>
+#include <stack>
+using namespace std;
+
+int main()
+{
+	ifstream fin("lightsout.in");
+	ofstream fout("lightsout.out");
+
+	ios::sync_with_stdio(false);
+	fin.tie(nullptr);
+
+	int n;
+	fin >> n;
+	vector<pair<int, int>> coords(n);
+	for (int i = 0; i < n; i++) fin >> coords[i].first >> coords[i].second;
+	coords.push_back(coords[0]);
+
+	vector<char> dir(0);
+	for (int i = 1; i <= n; i++)
+	{
+		if (coords[i].first == coords[i - 1].first)
+		{
+			if (coords[i].second > coords[i - 1].second) dir.push_back('U');
+			else dir.push_back('D');
+		}
+
+		else if (coords[i].first > coords[i - 1].first) dir.push_back('R');
+		else dir.push_back('L');
+	}
+
+	vector<int> turn(1, -2);
+	for (int i = 1; i < n; i++)
+	{
+		if (dir[i - 1] == 'U')
+		{
+			if (dir[i] == 'R') turn.push_back(1);
+			else turn.push_back(-1);
+		}
+
+		else if (dir[i - 1] == 'R')
+		{
+			if (dir[i] == 'D') turn.push_back(1);
+			else turn.push_back(-1);
+		}
+
+		else if (dir[i - 1] == 'D')
+		{
+			if (dir[i] == 'L') turn.push_back(1);
+			else turn.push_back(-1);
+		}
+
+		else if (dir[i] == 'U') turn.push_back(1);
+		else turn.push_back(-1);
+	}
+
+	turn.push_back(-2);
+	vector<int> dst(n + 1);
+	for (int i = 1; i <= n; i++) dst[i - 1] = abs(coords[i].first - coords[i - 1].first) + abs(coords[i].second - coords[i - 1].second);
+	vector<int> suffsum(n + 1, 0);
+	for (int i = n - 1; i > -1; i--) suffsum[i] = suffsum[i + 1] + dst[i];
+	vector<int> orgwalk = suffsum;
+	for (int i = n; i > -1; i--) orgwalk[i] = min(orgwalk[i], suffsum[0] - orgwalk[i]);
+
+	vector<int> newwalk(n + 1);
+	stack<vector<vector<int>>> tprc;
+	map<int, vector<vector<int>>> cmap;
+	for (int i = 1; i <= n; i++) cmap[turn[i]].push_back({ i, i, 0 });
+	for (auto it : cmap) tprc.push(it.second);
+
+	while (!tprc.empty())
+	{
+		vector<vector<int>> ctop = tprc.top();
+		tprc.pop();
+
+		if (ctop.size() == 1) newwalk[ctop[0][0]] = ctop[0][2] + orgwalk[ctop[0][1]];
+		else
+		{
+			for (int i = 0; i < ctop.size(); i++) ctop[i][2] += dst[ctop[i][1]];
+			for (int i = 0; i < ctop.size(); i++) ctop[i][1]++;
+			map<int, vector<vector<int>>> map1;
+			for (int i = 0; i < ctop.size(); i++) map1[ctop[i][2]].push_back(ctop[i]);
+			for (auto it1 : map1)
+			{
+				map<int, vector<vector<int>>> map2;
+				for (vector<int> el : it1.second) map2[turn[el[1]]].push_back(el);
+				for (auto it2 : map2) tprc.push(it2.second);
+			}
+		}
+	}
+
+	int ans = 0;
+	for (int i = 1; i <= n; i++) ans = max(ans, newwalk[i] - orgwalk[i]);
+	fout << ans;
+}

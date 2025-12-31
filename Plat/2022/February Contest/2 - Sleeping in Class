@@ -1,0 +1,131 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+using ll = long long;
+
+const int MXCHECK = 1e6;
+
+ll gcd(ll a, ll b)
+{
+	if (b == 0) return a;
+	return gcd(b, a % b);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int n;
+	cin >> n;
+	vector<ll> psums(n + 1, 0);
+	for (int i = 1; i <= n; i++) cin >> psums[i];
+	for (int i = 1; i <= n; i++) psums[i] += psums[i - 1];
+
+	if (psums[n] == 1)
+	{
+		int _;
+		cin >> _;
+		while (_--)
+		{
+			ll q;
+			cin >> q;
+			if (q == 1) cout << "0\n";
+			else cout << "-1\n";
+		}
+	}
+
+	else
+	{
+		vector<int> sbsets(0);
+		vector<ll> primes(0);
+
+		ll currbsum = psums[n];
+		for (int p = 2; p < MXCHECK; p++) if (currbsum % p == 0)
+		{
+			sbsets.push_back(0);
+			while (currbsum % p == 0) sbsets.back()++, currbsum /= p;
+			primes.push_back(p);
+		}
+
+		if (currbsum > 1)
+		{
+			ll resqrt = sqrt(currbsum);
+			if (resqrt * resqrt == currbsum)
+			{
+				sbsets.push_back(2);
+				currbsum = 1;
+				primes.push_back(resqrt);
+			}
+
+			else
+			{
+				primes.push_back(currbsum);
+				sbsets.push_back(1);
+			}
+		}
+
+		vector<vector<int>> primefact(0);
+		for (int i = 1; i < n; i++)
+		{
+			primefact.push_back(vector<int>(primes.size(), 0));
+			ll cgcd = gcd(psums[i], psums[n]);
+			for (int j = 0; j < primes.size(); j++) while (cgcd % primes[j] == 0)
+				primefact.back()[j]++, cgcd /= primes[j];
+
+			if (cgcd > 1)
+			{
+				for (int j = 0; j < i - 1; j++) primefact[j].push_back(primefact[j].back());
+				ll p = cgcd;
+				ll q = currbsum / p;
+
+				primes.back() = p;
+				primes.push_back(q);
+				primefact.back().back() = 1;
+				primefact.back().push_back(0);
+				sbsets.push_back(1);
+			}
+		}
+
+		vector<int> addfact(primes.size(), 1);
+		for (int i = 1; i < primes.size(); i++) addfact[i] = addfact[i - 1] * (sbsets[i - 1] + 1);
+		int totfact = addfact.back() * (sbsets.back() + 1);
+		vector<vector<int>> countfact(totfact, vector<int>(primes.size(), 0));
+		for (int i = 0; i < primefact.size(); i++)
+		{
+			int factnum = 0;
+			for (int j = 0; j < primes.size(); j++) factnum += primefact[i][j] * addfact[j];
+			countfact[factnum][0]++;
+		}
+
+		for (int i = totfact - 1; i > -1; i--) for (int j = 0; j < primes.size(); j++)
+		{
+			int cmod = i;
+			if (j < primes.size() - 1) cmod %= addfact[j + 1];
+			if (cmod >= addfact[j]) for (int k = 0; k <= j; k++) countfact[i - addfact[j]][j] += countfact[i][k];
+		}
+
+		int _;
+		cin >> _;
+		while (_--)
+		{
+			ll q;
+			cin >> q;
+			if (psums[n] % q > 0) cout << "-1\n";
+			else
+			{
+				ll ans = psums[n] / q + (1ll * n) - 2ll;
+				vector<int> cpfact(primes.size());
+				for (int i = 0; i < primes.size(); i++) while (q % primes[i] == 0) cpfact[i]++, q /= primes[i];
+				if (q > 1) cpfact.back()++;
+
+				int factnum = 0;
+				for (int i = 0; i < primes.size(); i++) factnum += cpfact[i] * addfact[i];
+				for (int i = 0; i < primes.size(); i++) ans -= 2ll * countfact[factnum][i];
+				cout << ans << "\n";
+			}
+		}
+	}
+}

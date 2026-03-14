@@ -1,0 +1,183 @@
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <map>
+#include <set>
+#include <stack>
+using namespace std;
+
+void solve()
+{
+	int n, _;
+	cin >> n >> _;
+	set<pair<pair<int, int>, int>> minrq, maxrq;
+	while (_--)
+	{
+		int t, l, r, k;
+		cin >> t >> l >> r >> k;
+		l--, r--;
+		if (t == 1) minrq.insert({ {l, r}, k });
+		else maxrq.insert({ {l, r}, k });
+	}
+
+	vector<int> minarr(n, -1), maxarr(n, 1e9 + 1);
+	set<pair<int, int>> minpending, maxpending;
+	map<int, int> kcount;
+	map<int, set<int>> minmax, maxmin;
+	set<int> emptyset;
+	for (int i = 0; i <= n; i++)
+	{
+		while (!minrq.empty() && ((*minrq.begin()).first.first == i))
+		{
+			pair<pair<int, int>, int> lrk = *minrq.begin();
+			minrq.erase(minrq.begin()), minpending.insert({ -lrk.second, lrk.first.second });
+			kcount[lrk.second] = 0, minmax[lrk.second] = emptyset;
+		}
+
+		while (!maxrq.empty() && ((*maxrq.begin()).first.first == i))
+		{
+			pair<pair<int, int>, int> lrk = *maxrq.begin();
+			maxrq.erase(maxrq.begin()), maxpending.insert({ lrk.second, lrk.first.second });
+			kcount[lrk.second] = 0, maxmin[lrk.second] = emptyset;
+		}
+
+		while (!minpending.empty() && ((*minpending.begin()).second < i)) minpending.erase(minpending.begin());
+		while (!maxpending.empty() && ((*maxpending.begin()).second < i)) maxpending.erase(maxpending.begin());
+
+		if (!minpending.empty()) minarr[i] = -(*minpending.begin()).first, kcount[-(*minpending.begin()).first]++;
+		if (!maxpending.empty())
+		{
+			maxarr[i] = (*maxpending.begin()).first, kcount[(*maxpending.begin()).first]++;
+			if (minarr[i] > maxarr[i])
+			{
+				cout << "-1\n";
+				return;
+			}
+
+			if (minarr[i] > -1) minmax[minarr[i]].insert(maxarr[i]), maxmin[maxarr[i]].insert(minarr[i]);
+		}
+	}
+
+	map<int, int> fmatching;
+	set<int> minmatch, maxmatch, minconf, maxconf;
+	for (auto it : kcount) if (it.second == 0)
+	{
+		cout << "-1\n";
+		return;
+	}
+
+	for (auto it : minmax)
+	{
+		if (it.second.size() < kcount[it.first]) minmatch.insert(it.first);
+		if (kcount[it.first] == 1) minconf.insert(it.first);
+	}
+
+	for (auto it : maxmin)
+	{
+		if (it.second.size() < kcount[it.first]) maxmatch.insert(it.first);
+		if (kcount[it.first] == 1) maxconf.insert(it.first);
+	}
+
+	while (!kcount.empty())
+	{
+		if (!minconf.empty())
+		{
+			int tprc = *minconf.begin();
+			minconf.erase(minconf.begin());
+
+			if (minmax[tprc].empty()) minmatch.erase(tprc);
+			else
+			{
+				int maxnum = *minmax[tprc].begin();
+				maxmin[maxnum].erase(tprc), fmatching[maxnum] = tprc, kcount[maxnum]--;
+				if (kcount[maxnum] == 1) maxconf.insert(maxnum);
+				else if (kcount[maxnum] == 0)
+				{
+					cout << "-1\n";
+					return;
+				}
+			}
+
+			minmax.erase(tprc), kcount.erase(tprc);
+		}
+
+		else if (!maxconf.empty())
+		{
+			int tprc = *maxconf.begin();
+			maxconf.erase(maxconf.begin());
+
+			if (maxmin[tprc].empty()) maxmatch.erase(tprc), fmatching[tprc] = -1;
+			else
+			{
+				int minnum = *maxmin[tprc].begin();
+				minmax[minnum].erase(tprc), fmatching[tprc] = minnum, kcount[minnum]--;
+				if (kcount[minnum] == 1) minconf.insert(minnum);
+				else if (kcount[minnum] == 0)
+				{
+					cout << "-1\n";
+					return;
+				}
+			}
+
+			maxmin.erase(tprc), kcount.erase(tprc);
+		}
+
+		else if (!minmatch.empty())
+		{
+			int tprc = *minmatch.begin();
+			minmatch.erase(minmatch.begin());
+
+			for (int maxnum : minmax[tprc])
+			{
+				maxmatch.erase(maxnum), maxmin[maxnum].erase(tprc), fmatching[maxnum] = tprc, kcount.erase(maxnum);
+				for (int minnum : maxmin[maxnum]) minmatch.insert(minnum), minmax[minnum].erase(maxnum);
+				maxmin.erase(maxnum);
+			}
+
+			minmax.erase(tprc), kcount.erase(tprc);
+		}
+
+		else if (!maxmatch.empty())
+		{
+			int tprc = *maxmatch.begin();
+			maxmatch.erase(maxmatch.begin());
+
+			fmatching[tprc] = -1;
+			for (int minnum : maxmin[tprc]) minmatch.insert(minnum), minmax[minnum].erase(tprc);
+			maxmin.erase(tprc), kcount.erase(tprc);
+		}
+
+		else
+		{
+			auto it = maxmin.begin();
+			int tprc = it->first, cmin = *it->second.begin();
+			fmatching[tprc] = cmin, kcount[cmin]--, minmax[cmin].erase(tprc);
+			if (kcount[cmin] == 1) minconf.insert(cmin);
+
+			it->second.erase(it->second.begin());
+			for (int minnum : it->second) minmatch.insert(minnum), minmax[minnum].erase(tprc);
+			maxmin.erase(it), kcount.erase(tprc);
+		}
+	}
+
+	for (int i = 0; i < n; i++)
+	{
+		if (i > 0) cout << ' ';
+		if (fmatching.count(maxarr[i]) == 1) if (fmatching[maxarr[i]] == minarr[i]) minarr[i] = maxarr[i], fmatching.erase(maxarr[i]);
+		if (minarr[i] == -1) minarr[i]++;
+		cout << minarr[i];
+	}
+
+	cout << "\n";
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(nullptr);
+
+	int _;
+	cin >> _;
+	while (_--) solve();
+}
